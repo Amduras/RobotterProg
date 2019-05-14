@@ -1,4 +1,4 @@
-package ControlGUI;
+package versuche;
 
 import java.awt.GridLayout;
 import java.awt.Label;
@@ -55,6 +55,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
+						rMoves.setFollowLine(false);
 						rMoves.setArrayHell();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -66,6 +67,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
+						rMoves.setFollowLine(false);
 						rMoves.setArrayDunkel();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -77,6 +79,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
+						rMoves.setFollowLine(false);
 						rMoves.setArrayRand();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -87,6 +90,7 @@ public class RobotControl {
 			bVorwärts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					mControl.drive(100, 0);
 					System.out.println("Vorwärts");
 				}
@@ -95,6 +99,7 @@ public class RobotControl {
 			bRückwärts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					mControl.drive(-speed, 0);
 					System.out.println("Rückärts");
 				}
@@ -103,6 +108,7 @@ public class RobotControl {
 			bLinks.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					mControl.drive(speed, 100);
 					System.out.println("Links Kurve");
 				}
@@ -111,6 +117,7 @@ public class RobotControl {
 			bRechts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					mControl.drive(speed, -100);
 					System.out.println("rechts Kurve");
 				}
@@ -119,6 +126,7 @@ public class RobotControl {
 			bStop.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					mControl.drive(0, 0);
 					System.out.println("Stop");
 				}
@@ -139,6 +147,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
+						rMoves.setFollowLine(true);
 						rMoves.followLine();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -150,6 +159,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
+						rMoves.setFollowLine(true);
 						rMoves.followRobot();
 					} catch (RemoteException e1) {
 						// TODO Auto-generated catch block
@@ -161,6 +171,7 @@ public class RobotControl {
 			bEnd.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					beeneden();
 				}
 			});
@@ -223,7 +234,9 @@ public class RobotControl {
 	}
 	public static void setup() {
 		try {
-			ev3=new RemoteEV3("10.0.1.1");
+			if (ev3==null) {
+				ev3=new RemoteEV3("10.0.1.1");
+			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -255,10 +268,29 @@ public class RobotControl {
 //			motorD = ev3.createRegulatedMotor("D", 'L');
 		}
 		mControl = new MotorControl(motorA, motorB);
-		farbSensor = null;
-		farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
-		ultraSensor = null; 
-		//ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+		if (farbSensor==null) {
+			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
+		}else {
+			try {
+				farbSensor.close();
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
+		}
+		if (ultraSensor == null) {
+			//ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+		}
+		else {
+			try {
+				ultraSensor.close();
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+		}
 		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor);		
 		System.out.println("Setup fetig");
 	}
@@ -272,31 +304,37 @@ public class RobotControl {
 			if(motorA!=null) {
 				System.out.println("MotorA läuft noch");
 				motorA.close();
+				motorA=null;
 				System.out.println("MotorA wurde beendet");
 			}
 			if(motorB!=null) {
 				System.out.println("MotorB läuft noch");
 				motorB.close();
+				motorB=null;
 				System.out.println("MotorB wurde beendet");
 			}
 			if(motorC!=null) {
 				System.out.println("MotorC läuft noch");
 				motorC.close();
+				motorC=null;
 				System.out.println("MotorC wurde beendet");
 			}
 			if(motorD!=null) {
 				System.out.println("MotorD läuft noch");
 				motorD.close();
+				motorD=null;
 				System.out.println("MotorD wurde beendet");
 			}
 			if(farbSensor!=null) {
 				System.out.println("Farbsensor läuft noch");
 				farbSensor.close();
+				farbSensor=null;
 				System.out.println("FarbSensor wurde beendet");
 			}
 			if(ultraSensor!=null) {
 				System.out.println("UltraSensor läuft noch");
 				ultraSensor.close();
+				ultraSensor=null;
 				System.out.println("UltraSensor wurde beendet");
 			}
 			System.out.println("Alle Sensoren erfolgreich beendet!");
