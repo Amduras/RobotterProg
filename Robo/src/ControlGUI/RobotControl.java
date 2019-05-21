@@ -29,8 +29,8 @@ public class RobotControl {
 	static MotorControl mControl;
 	static RemoteEV3 ev3;
 	static RobotMoves rMoves;
-	static int speed=100;
-	static boolean followLine = false;
+	static volatile int speed=50;
+	static volatile boolean followLine = false;
 	
 	public RobotControl(){
 		try {
@@ -154,11 +154,8 @@ public class RobotControl {
 							while(followLine) {
 								try {
 									rMoves.followLine();
-									Thread.sleep(100);
+//									Thread.sleep(100);
 								} catch (RemoteException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								} catch (InterruptedException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
@@ -214,7 +211,7 @@ public class RobotControl {
 			jPan3.add(bDunkel);
 
 			Label lSpeed = new Label("Speed Regulator: Currently: " + speed);
-			JScrollBar jsSpeed = new JScrollBar(JScrollBar.HORIZONTAL, speed, 0, 1, 100);
+			JScrollBar jsSpeed = new JScrollBar(JScrollBar.HORIZONTAL, speed, 0, 1, speed*2);
 			jsSpeed.addAdjustmentListener(e->{
 				speed=jsSpeed.getValue();
 	            rMoves.setSpeed(speed);
@@ -294,7 +291,7 @@ public class RobotControl {
 			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
 		}
 		if (ultraSensor == null) {
-			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "Distance");
 		}
 		else {
 			try {
@@ -303,10 +300,10 @@ public class RobotControl {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "Distance");
 		}
 		if (gyroSensor == null) {
-			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
+//			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
 		}
 		else {
 			try {
@@ -315,9 +312,9 @@ public class RobotControl {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "distance");
+//			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
 		}
-		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor, gyroSensor);		
+		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor, gyroSensor, speed);		
 		System.out.println("Setup fetig");
 	}
 	
