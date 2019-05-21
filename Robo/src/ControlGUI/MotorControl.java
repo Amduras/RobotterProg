@@ -1,8 +1,7 @@
-package ControlGUI;
+package versuche;
 
 import java.rmi.RemoteException;
 
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.remote.ev3.RMIRegulatedMotor;
 /**
  * 
@@ -36,8 +35,8 @@ public class MotorControl {
 		float multiplier = 2*mSpeed/100;
 		int speedmodifier = (int) (multiplier*turn);
 		try {
+			//Vorwaerts
 			if (speed>=0) {
-				//rechts Kurve
 				if (turn>=0) {
 					motorA.setSpeed(speed);
 					motorA.forward();
@@ -49,7 +48,6 @@ public class MotorControl {
 						motorB.backward();
 					}
 				}
-				//links Kurve
 				if (turn<0) {
 					if (speed+speedmodifier>0) {
 						motorA.setSpeed(speed+speedmodifier);
@@ -61,9 +59,10 @@ public class MotorControl {
 					motorB.setSpeed(speed);
 					motorB.forward();
 				}
-			}else {
+			}
+			//Rueckwaerts
+			else {
 				speed=-speed;
-				//rechts Kurve
 				if (turn<=0) {
 					motorA.setSpeed(speed);
 					motorA.backward();
@@ -75,7 +74,6 @@ public class MotorControl {
 						motorB.forward();
 					}
 				}
-				//links Kurve
 				if (turn>0) {
 					if (speed-speedmodifier>0) {
 						motorA.setSpeed(speed-speedmodifier);

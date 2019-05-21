@@ -1,4 +1,4 @@
-package ControlGUI;
+package versuche;
 
 import java.awt.GridLayout;
 import java.awt.Label;
@@ -25,10 +25,11 @@ public class RobotControl {
 	static RMIRegulatedMotor motorD;
 	static RMISampleProvider ultraSensor;
 	static RMISampleProvider farbSensor;
+	static RMISampleProvider gyroSensor;
 	static MotorControl mControl;
 	static RemoteEV3 ev3;
 	static RobotMoves rMoves;
-	static int speed=50;
+	static int speed=100;
 	static boolean followLine = false;
 	
 	public RobotControl(){
@@ -87,22 +88,22 @@ public class RobotControl {
 					}
 				}
 			});
-			JButton bVorwärts= new JButton("Vorwärts");
-			bVorwärts.addActionListener(new ActionListener() {
+			JButton bVorwaerts= new JButton("Vorwaerts");
+			bVorwaerts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					followLine = false;
 					mControl.drive(100, 0);
-					System.out.println("Vorwärts");
+					System.out.println("Vorwaerts");
 				}
 			});
-			JButton bRückwärts= new JButton("Rückwärts");
-			bRückwärts.addActionListener(new ActionListener() {
+			JButton bRueckwaerts= new JButton("Rueckwaerts");
+			bRueckwaerts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					followLine = false;
 					mControl.drive(-speed, 0);
-					System.out.println("Rückwärts");
+					System.out.println("Rueckwaerts");
 				}
 			});
 			JButton bLinks= new JButton("Links");
@@ -132,8 +133,8 @@ public class RobotControl {
 					System.out.println("Stop");
 				}
 			});
-			JButton bZurück= new JButton("Zurück");
-			bZurück.addActionListener(new ActionListener() {
+			JButton bZurueck= new JButton("Zurueck");
+			bZurueck.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 //					try {
@@ -190,11 +191,11 @@ public class RobotControl {
 			
 			
 			JButton[] manualButtons = new JButton[6];
-			manualButtons[0]=bVorwärts;
-			manualButtons[1]=bRückwärts;
+			manualButtons[0]=bVorwaerts;
+			manualButtons[1]=bRueckwaerts;
 			manualButtons[2]=bRechts;
 			manualButtons[3]=bLinks;
-			manualButtons[4]=bZurück;
+			manualButtons[4]=bZurueck;
 			manualButtons[5]=bStop;
 			
 			JPanel jPan1 = new JPanel();
@@ -218,7 +219,7 @@ public class RobotControl {
 				speed=jsSpeed.getValue();
 	            rMoves.setSpeed(speed);
 	            lSpeed.setText("Speed Regulator: Currently: " + speed);
-	            System.out.println("Speed wurde geändert: " + speed);
+	            System.out.println("Speed wurde geaendert: " + speed);
 	        });
 			
 			frame.add(lKalibrieren);
@@ -293,7 +294,7 @@ public class RobotControl {
 			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
 		}
 		if (ultraSensor == null) {
-			//ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
 		}
 		else {
 			try {
@@ -302,9 +303,21 @@ public class RobotControl {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			//ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
+			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "distance");
 		}
-		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor);		
+		if (gyroSensor == null) {
+			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
+		}
+		else {
+			try {
+				gyroSensor.close();
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "distance");
+		}
+		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor, gyroSensor);		
 		System.out.println("Setup fetig");
 	}
 	
@@ -315,40 +328,46 @@ public class RobotControl {
 		try {
 			System.out.println("beende Motoren:");
 			if(motorA!=null) {
-				System.out.println("MotorA läuft noch");
+				System.out.println("MotorA laeuft noch");
 				motorA.close();
 				motorA=null;
 				System.out.println("MotorA wurde beendet");
 			}
 			if(motorB!=null) {
-				System.out.println("MotorB läuft noch");
+				System.out.println("MotorB laeuft noch");
 				motorB.close();
 				motorB=null;
 				System.out.println("MotorB wurde beendet");
 			}
 			if(motorC!=null) {
-				System.out.println("MotorC läuft noch");
+				System.out.println("MotorC laeuft noch");
 				motorC.close();
 				motorC=null;
 				System.out.println("MotorC wurde beendet");
 			}
 			if(motorD!=null) {
-				System.out.println("MotorD läuft noch");
+				System.out.println("MotorD laeuft noch");
 				motorD.close();
 				motorD=null;
 				System.out.println("MotorD wurde beendet");
 			}
 			if(farbSensor!=null) {
-				System.out.println("Farbsensor läuft noch");
+				System.out.println("Farbsensor laeuft noch");
 				farbSensor.close();
 				farbSensor=null;
 				System.out.println("FarbSensor wurde beendet");
 			}
 			if(ultraSensor!=null) {
-				System.out.println("UltraSensor läuft noch");
+				System.out.println("UltraSensor laeuft noch");
 				ultraSensor.close();
 				ultraSensor=null;
 				System.out.println("UltraSensor wurde beendet");
+			}
+			if (gyroSensor!=null) {
+				System.out.println("gyroSensor laeuft noch");
+				gyroSensor.close();
+				gyroSensor=null;
+				System.out.println("gyroSensor wurde beendet");
 			}
 			System.out.println("Alle Sensoren erfolgreich beendet!");
 		} catch (RemoteException e) {

@@ -1,4 +1,4 @@
-package ControlGUI;
+package versuche;
 
 import java.rmi.RemoteException;
 import java.sql.Time;
@@ -12,6 +12,7 @@ public class RobotMoves {
 	private RMISampleProvider farbSensor;
 	private MotorControl mControl;
 	private RMISampleProvider ultraSensor;
+	private RMISampleProvider gyroSensor;
 	private SampleProvider distance=null;
 	private float[] aHell = new float[3];
 	private float[] aDunkel = new float[3];
@@ -21,10 +22,11 @@ public class RobotMoves {
 	private int farbe = 0, KONSTANTE_P = 60, KONSTANTE_I = 35, KONSTANTE_D = 5;
 	private int speed=50;
 	
-	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor) {
+	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor) {
 		this.mControl = mControl;
 		this.farbSensor = farbSensor;
 		this.ultraSensor=ultraSensor;
+		this.gyroSensor=gyroSensor;
 	}
 	
 	public void followLine() throws RemoteException {
@@ -90,13 +92,46 @@ public class RobotMoves {
 			txt+=sample[i] + "\n";
 		}
 		LCD.drawString("Distanz: " + txt, 0, 3);
-		
-		if (sample[0]>=5) {
+
+		//Sample Range between 0.03-2,5
+		if (sample[0]>=0.2) {
 			followLine();
 		}else {
-			
+			if ( sample[0]>0.1 && sample[0]<0.2 ) {
+				followLine();
+			}else {
+				
+			}
 		}
 			// sample[0] contains distance ...
+	}
+	
+	public void evade() {
+		float[] sample = new float[distance.sampleSize()];
+		distance.fetchSample(sample, 0);
+		String txt="";
+		for (int i = 0; i < sample.length; i++) {
+			txt+=sample[i] + "\n";
+		}
+		System.out.println("Distanz: " + txt);
+		//Sample Range between 0.03-2,5
+		if (sample[0]>=0.5) {
+			
+		}else {
+			evadeStep1();
+			evadeStep2();
+			evadeStep3();
+		}
+	}
+	
+	private void evadeStep1() {
+		
+	}
+	private void evadeStep2() {
+		
+	}
+	private void evadeStep3() {
+		
 	}
 
 	private void highLow() {
