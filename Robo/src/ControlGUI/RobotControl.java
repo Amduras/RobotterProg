@@ -1,4 +1,4 @@
-package versuche;
+package ControlGUI;
 
 import java.awt.GridLayout;
 import java.awt.Label;
@@ -29,6 +29,7 @@ public class RobotControl {
 	static RemoteEV3 ev3;
 	static RobotMoves rMoves;
 	static int speed=50;
+	static boolean followLine = false;
 	
 	public RobotControl(){
 		try {
@@ -55,7 +56,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
-						rMoves.setFollowLine(false);
+						followLine = false;
 						rMoves.setArrayHell();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -67,7 +68,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
-						rMoves.setFollowLine(false);
+						followLine = false;
 						rMoves.setArrayDunkel();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -79,7 +80,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
-						rMoves.setFollowLine(false);
+						followLine = false;
 						rMoves.setArrayRand();
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
@@ -90,7 +91,7 @@ public class RobotControl {
 			bVorwärts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					mControl.drive(100, 0);
 					System.out.println("Vorwärts");
 				}
@@ -99,16 +100,16 @@ public class RobotControl {
 			bRückwärts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					mControl.drive(-speed, 0);
-					System.out.println("Rückärts");
+					System.out.println("Rückwärts");
 				}
 			});
 			JButton bLinks= new JButton("Links");
 			bLinks.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					mControl.drive(speed, 100);
 					System.out.println("Links Kurve");
 				}
@@ -117,16 +118,16 @@ public class RobotControl {
 			bRechts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					mControl.drive(speed, -100);
-					System.out.println("rechts Kurve");
+					System.out.println("Rechts Kurve");
 				}
 			});
 			JButton bStop= new JButton("Stop");
 			bStop.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					mControl.drive(0, 0);
 					System.out.println("Stop");
 				}
@@ -146,12 +147,23 @@ public class RobotControl {
 			bLinieFolgen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					try {
-						rMoves.setFollowLine(true);
-						rMoves.followLine();
-					} catch (RemoteException e1) {
-						e1.printStackTrace();
-					}
+					followLine = true;
+					new Thread() {
+						public void run() {
+							while(followLine) {
+								try {
+									rMoves.followLine();
+									Thread.sleep(100);
+								} catch (RemoteException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+						}
+					}.start();
 				}
 			});
 			JButton bFollow= new JButton("Roboter folgen");
@@ -159,7 +171,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
-						rMoves.setFollowLine(true);
+						followLine = false;
 						rMoves.followRobot();
 					} catch (RemoteException e1) {
 						// TODO Auto-generated catch block
@@ -171,7 +183,7 @@ public class RobotControl {
 			bEnd.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					rMoves.setFollowLine(false);
+					followLine = false;
 					beeneden();
 				}
 			});
@@ -235,7 +247,8 @@ public class RobotControl {
 	public static void setup() {
 		try {
 			if (ev3==null) {
-				ev3=new RemoteEV3("10.0.1.1");
+//				ev3=new RemoteEV3("10.0.1.1");
+				ev3 = new RemoteEV3("192.168.0.109");
 			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block

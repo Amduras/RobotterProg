@@ -1,6 +1,7 @@
-package versuche;
+package ControlGUI;
 
 import java.rmi.RemoteException;
+import java.sql.Time;
 
 import lejos.hardware.lcd.LCD;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
@@ -17,9 +18,8 @@ public class RobotMoves {
 	private float[] aRand = new float[3];
 	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, zuletzt = 0;
-	private int farbe = 0, KONSTANTE_P = 40, KONSTANTE_I = 0, KONSTANTE_D = 60;
-	private int speed=75;
-	private boolean followLine=false;
+	private int farbe = 0, KONSTANTE_P = 60, KONSTANTE_I = 35, KONSTANTE_D = 5;
+	private int speed=50;
 	
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor) {
 		this.mControl = mControl;
@@ -28,7 +28,7 @@ public class RobotMoves {
 	}
 	
 	public void followLine() throws RemoteException {
-		while(followLine) {
+			float start = System.nanoTime();
 			float[] colors=farbSensor.fetchSample();
 			float nvalue=colors[farbe]-aRand[farbe];
 			if (nvalue==0) {
@@ -44,10 +44,10 @@ public class RobotMoves {
 			}
 			iAbweichung += pTurn;
 			if (iAbweichung>1) {
-				iAbweichung=1;
+				iAbweichung=1F;
 			}
 			if (iAbweichung<-1) {
-				iAbweichung=-1;
+				iAbweichung=-1F;
 			}
 			int turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(pTurn-zuletzt));
 			System.out.println("Turn: " + turn);
@@ -55,8 +55,20 @@ public class RobotMoves {
 			System.out.println("pTurn-Zuletzt: " + (pTurn-zuletzt));
 			System.out.println("I-Abweichung: " + iAbweichung);
 			zuletzt = pTurn;
+			if(turn > 100) {
+				turn = 100;
+			}
+			if(turn < -100) {
+				turn = -100;
+			}
 			mControl.drive(speed, turn);
-		}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println(System.nanoTime() - start);
 	}
 	
 	public static void sleep(int time) {
@@ -163,13 +175,5 @@ public class RobotMoves {
 		}
 		System.out.println(")");
 		highLow();
-	}
-	
-	public boolean isFollowLine() {
-		return followLine;
-	}
-
-	public void setFollowLine(boolean followLine) {
-		this.followLine = followLine;
 	}
 }
