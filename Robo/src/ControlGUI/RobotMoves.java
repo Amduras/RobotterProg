@@ -14,15 +14,20 @@ public class RobotMoves {
 	private RMISampleProvider ultraSensor;
 	private RMISampleProvider gyroSensor;
 	private SampleProvider distance=null;
-	private float[] aHell = new float[3];
-	private float[] aDunkel = new float[3];
+	private float[] aHell;
+	private float[] aDunkel;
 	private float[] aRand = new float[3];
 	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, zuletzt = 0, middle=0;
 	private float KONSTANTE_P = 30, KONSTANTE_I = -0.1f, KONSTANTE_D = 0;
 	private int farbe = 0;
 	private volatile int speed=0;
+	private volatile boolean followLine=false;
+	private volatile boolean evade=true; //Wenn evade==true: Roboter weicht Hindernissen aus ? Folgt anderen Robotern
+	private boolean rotModus=false;
+	private StepEnum step =StepEnum.FOLLOWLINE;
 	
+			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
 		this.mControl = mControl;
 		this.farbSensor = farbSensor;
@@ -58,9 +63,9 @@ public class RobotMoves {
 			if (iAbweichung>200) {
 				iAbweichung=200;
 			}
-
-			int turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(pTurn-zuletzt));
-//			System.out.println("Turn: " + turn);
+			float abweichung=pTurn-zuletzt;
+			int turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
+//			System.out.println("Tu;rn: " + turn);
 //			System.out.println("pTurn-Zuletzt: " + (pTurn-zuletzt));
 //			System.out.println("I-Abweichung: " + iAbweichung);
 			zuletzt = pTurn;
@@ -70,7 +75,32 @@ public class RobotMoves {
 			if(turn < -90) {
 				turn = -90;
 			}
-			mControl.drive(speed, turn);
+			
+			float[] sample = new float[distance.sampleSize()];
+			distance.fetchSample(sample, 0);
+
+			//Sample Range between 0.03-2,5
+			if (sample[0]>=0.3) {
+				mControl.drive(speed, turn);
+			}else {
+				if ( sample[0]>0.1 && sample[0]<0.3 ) {
+					if (evade) {
+						evade();
+					}else {
+						double slow=(sample[0]-1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
+						mControl.drive((int)slow*speed, turn);
+					}
+				}else {
+					if (sample[0]<=0.1) {
+						if (evade) {
+							mControl.drive(-speed, 0);
+						}else {
+							mControl.drive(0, 0);
+						}
+					}
+				}
+			}
+			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);			
 	}
 	
 	public static void sleep(int time) {
@@ -82,56 +112,33 @@ public class RobotMoves {
 		}
 	}
 	
-	public void followRobot() throws RemoteException {
-		 
-		float[] sample = new float[distance.sampleSize()];
-		 
-		distance.fetchSample(sample, 0);
-		String txt="";
-		for (int i = 0; i < sample.length; i++) {
-			txt+=sample[i] + "\n";
-		}
-		LCD.drawString("Distanz: " + txt, 0, 3);
-
-		//Sample Range between 0.03-2,5
-		if (sample[0]>=0.2) {
-			followLine();
-		}else {
-			if ( sample[0]>0.1 && sample[0]<0.2 ) {
-				followLine();
-			}else {
-				
-			}
-		}
-			// sample[0] contains distance ...
-	}
-	
 	public void evade() {
-		float[] sample = new float[distance.sampleSize()];
-		distance.fetchSample(sample, 0);
-		String txt="";
-		for (int i = 0; i < sample.length; i++) {
-			txt+=sample[i] + "\n";
-		}
-//		System.out.println("Distanz: " + txt);
-		//Sample Range between 0.03-2,5
-		if (sample[0]>=0.5) {
-			
-		}else {
-			evadeStep1();
-			evadeStep2();
-			evadeStep3();
-		}
-	}
-	
-	private void evadeStep1() {
 		
 	}
-	private void evadeStep2() {
-		
+	public void evade1() {
+		//turn<=90° rechts
+		mControl.drive(speed, 70);
 	}
-	private void evadeStep3() {
-		
+	public void evade2() {
+		//gerade aus fahren
+		mControl.drive(speed, 0);
+	}
+	public void evade3() {
+		//links drehen (wieder gerade)
+		mControl.drive(speed, -70);
+	}
+	public void evade4() {
+		//gerade aus fahren
+		mControl.drive(speed, 0);
+	}
+	public void evade5() {
+		//links drehen (hinter dem Hinderniss wieder nach Linie suchen)
+		mControl.drive(speed, -70);
+	}
+	public void evade6() {
+		//Linie suchen indem man in immer größer werdenden Kreisen sucht
+		int time=0;
+		mControl.drive(speed, 100-time);
 	}
 
 	private void highLow() {
@@ -214,6 +221,10 @@ public class RobotMoves {
 		//highLow();
 		highLow2();
 	}
+	
+	public float[] getArrayHell() {
+		return aHell;
+	}
 
 	public void setArrayDunkel() throws RemoteException {
 		aDunkel = farbSensor.fetchSample();
@@ -226,6 +237,10 @@ public class RobotMoves {
 		highLow2();
 	}
 
+	public float[] getArrayDunkel() {
+		return aDunkel;
+	}
+	
 	public int getSpeed() {
 		return speed;
 	}
@@ -247,5 +262,37 @@ public class RobotMoves {
 		}
 		System.out.println(")");
 		//highLow();
+	}
+
+	public boolean isFollowLine() {
+		return followLine;
+	}
+
+	public void setFollowLine(boolean followLine) {
+		this.followLine = followLine;
+	}
+
+	public boolean isEvade() {
+		return evade;
+	}
+
+	public void setEvade(boolean evade) {
+		this.evade = evade;
+	}
+
+	public boolean isRotModus() {
+		return rotModus;
+	}
+
+	public void setRotModus(boolean rotModus, RMISampleProvider farbSensor) {
+		this.farbSensor=farbSensor;
+		this.rotModus = rotModus;
+		aHell=null;
+		aDunkel=null;
+		hell=0;
+		dunkel=0;
+		middle=0;
+		hellArea=0;
+		dunkelArea=0;
 	}
 }

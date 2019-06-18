@@ -1,17 +1,22 @@
 package versuche;
 
+import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollBar;
 
 import lejos.remote.ev3.RMIRegulatedMotor;
@@ -31,27 +36,101 @@ public class RobotControl {
 	static RobotMoves rMoves;
 	static volatile int speed=50;
 	static volatile boolean followLine = false;
+	static Label lAbweichung = new Label("Abweichung:");
+	static Label lTurn = new Label("Turn:");
+	static Label lDistance = new Label("Distance:");
+	static Label lIAbweichung = new Label("I-Abweichung:");
+	static boolean rotModus=false;
 	
 	public RobotControl(){
 		try {
 			
 			//View
 			JFrame frame= new JFrame("Robot Control");
-			frame.setSize(1000, 1000);
+			frame.setSize(2000, 2000);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.setLayout(new GridLayout(8, 0));
+			frame.setLayout(new BorderLayout());
 			
-			Label lKalibrieren = new Label("Kalibrieren");
-			Label l1 = new Label("Remote control");
-
-			JButton bConnect= new JButton("Connect");
+			JPanel center = new JPanel(new GridLayout(12, 0));
+			JPanel east = new JPanel(new GridLayout(10, 0));
+			
+			Label lHell=new Label("Hell:");
+			Label lDunkel=new Label("Dunkel:");
+			Label lConnect = new Label("Verbindungsstatus: Disconnected");
+			
+			JRadioButton bStop= new JRadioButton("Stop", true);
+			bStop.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					followLine = false;
+					mControl.drive(0, 0);
+					System.out.println("Stop");
+				}
+			});
+			JRadioButton bZurueck= new JRadioButton("Zurueck");
+			JButton bConnect= new JButton("Verbinden");
 			bConnect.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-						RobotControl.setup();						
+						RobotControl.setup();
+						lConnect.setText("Verbindungsstatus: Connected");
 				}
 			});
 			
+			JButton bEnd= new JButton("Verbindung trennen");
+			bEnd.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					followLine = false;
+					beenden();
+					lConnect.setText("Verbindungsstatus: Discconected");
+				}
+			});
+			JRadioButton bRed= new JRadioButton("Rot-Modus");
+			bConnect.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					rotModus=true;
+					followLine=false;
+					mControl.drive(0, 0);
+					bStop.setSelected(true);
+					if (farbSensor!=null) {
+						try {
+							farbSensor.close();
+						} catch (RemoteException e2) {
+							// TODO Auto-generated catch block
+							e2.printStackTrace();
+						}
+					}
+					farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "Red");
+					rMoves.setRotModus(true, farbSensor);
+					lHell.setText("Hell:");
+					lDunkel.setText("Dunkel:");
+				}
+			});
+			
+			JRadioButton bRGB= new JRadioButton("RGB-Modus", true);
+			bEnd.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					rotModus=false;
+					followLine=false;
+					mControl.drive(0, 0);
+					bStop.setSelected(true);
+					if (farbSensor!=null) {
+						try {
+							farbSensor.close();
+						} catch (RemoteException e2) {
+							// TODO Auto-generated catch block
+							e2.printStackTrace();
+						}
+					}
+					farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
+					rMoves.setRotModus(true, farbSensor);
+					lHell.setText("Hell:");
+					lDunkel.setText("Dunkel:");
+				}
+			});
 			JButton bHell= new JButton("Hell");
 			bHell.addActionListener(new ActionListener() {
 				@Override
@@ -59,6 +138,12 @@ public class RobotControl {
 					try {
 						followLine = false;
 						rMoves.setArrayHell();
+						float[] array = rMoves.getArrayHell();
+						String txt="";
+						for (int i = 0; i < array.length; i++) {
+							txt+=array[i] + "\n";
+						}
+						lHell.setText("Hell= RGB: " + txt);
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
 					}
@@ -71,6 +156,12 @@ public class RobotControl {
 					try {
 						followLine = false;
 						rMoves.setArrayDunkel();
+						float[] array = rMoves.getArrayDunkel();
+						String txt="";
+						for (int i = 0; i < array.length; i++) {
+							txt+=array[i] + "\n";
+						}
+						lDunkel.setText("Dunkel= Red: " + txt);
 					} catch (RemoteException e1) {
 						e1.printStackTrace();
 					}
@@ -88,7 +179,7 @@ public class RobotControl {
 					}
 				}
 			});
-			JButton bVorwaerts= new JButton("Vorwaerts");
+			JRadioButton bVorwaerts= new JRadioButton("Vorwaerts");
 			bVorwaerts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -97,7 +188,7 @@ public class RobotControl {
 					System.out.println("Vorwaerts");
 				}
 			});
-			JButton bRueckwaerts= new JButton("Rueckwaerts");
+			JRadioButton bRueckwaerts= new JRadioButton("Rueckwaerts");
 			bRueckwaerts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -106,7 +197,7 @@ public class RobotControl {
 					System.out.println("Rueckwaerts");
 				}
 			});
-			JButton bLinks= new JButton("Links");
+			JRadioButton bLinks= new JRadioButton("Links");
 			bLinks.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -115,7 +206,7 @@ public class RobotControl {
 					System.out.println("Links Kurve");
 				}
 			});
-			JButton bRechts= new JButton("Rechts");
+			JRadioButton bRechts= new JRadioButton("Rechts");
 			bRechts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -124,16 +215,6 @@ public class RobotControl {
 					System.out.println("Rechts Kurve");
 				}
 			});
-			JButton bStop= new JButton("Stop");
-			bStop.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					followLine = false;
-					mControl.drive(0, 0);
-					System.out.println("Stop");
-				}
-			});
-			JButton bZurueck= new JButton("Zurueck");
 			bZurueck.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -144,8 +225,8 @@ public class RobotControl {
 //					}
 				}
 			});
-			JButton bLinieFolgen= new JButton("Linie folgen");
-			bLinieFolgen.addActionListener(new ActionListener() {
+			JRadioButton bAusweichen= new JRadioButton("Ausweichen");
+			bAusweichen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					followLine = true;
@@ -153,8 +234,8 @@ public class RobotControl {
 						public void run() {
 							while(followLine) {
 								try {
+									rMoves.setEvade(true);
 									rMoves.followLine();
-//									Thread.sleep(100);
 								} catch (RemoteException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -164,52 +245,61 @@ public class RobotControl {
 					}.start();
 				}
 			});
-			JButton bFollow= new JButton("Roboter folgen");
-			bFollow.addActionListener(new ActionListener() {
+			JRadioButton bFolgen= new JRadioButton("Roboter folgen");
+			bFolgen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					try {
-						followLine = false;
-						rMoves.followRobot();
+						followLine = true;
+						rMoves.setEvade(false);
+						rMoves.followLine();
 					} catch (RemoteException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
 			});
-			JButton bEnd= new JButton("verbindung trennen");
-			bEnd.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					followLine = false;
-					beeneden();
-				}
-			});
 			
 			
-			JButton[] manualButtons = new JButton[6];
-			manualButtons[0]=bVorwaerts;
-			manualButtons[1]=bRueckwaerts;
-			manualButtons[2]=bRechts;
-			manualButtons[3]=bLinks;
-			manualButtons[4]=bZurueck;
-			manualButtons[5]=bStop;
+			ButtonGroup manualButtons = new ButtonGroup();
+			manualButtons.add(bVorwaerts);
+			manualButtons.add(bRueckwaerts);
+			manualButtons.add(bRechts);
+			manualButtons.add(bLinks);
+			manualButtons.add(bZurueck);
+			manualButtons.add(bStop);
+			manualButtons.add(bAusweichen);
+			manualButtons.add(bFolgen);
+			
+			ButtonGroup modusButtons = new ButtonGroup();
+			modusButtons.add(bRed);
+			modusButtons.add(bRGB);
 			
 			JPanel jPan1 = new JPanel();
-			for (int i = 0; i < manualButtons.length; i++) {
-				jPan1.add(manualButtons[i]);
-			}
+			jPan1.add(bVorwaerts);
+			jPan1.add(bRueckwaerts);
+			jPan1.add(bRechts);
+			jPan1.add(bLinks);
+			jPan1.add(bZurueck);
+			jPan1.add(bStop);
+			
 			JPanel jPan2 = new JPanel();
-			jPan2.add(bLinieFolgen);
-			jPan2.add(bFollow);
-			jPan2.add(bEnd);
+			jPan2.add(bAusweichen);
+			jPan2.add(bFolgen);
 
 			JPanel jPan3 = new JPanel();
-			jPan3.add(bConnect);
-			jPan3.add(bRand);
+			//jPan3.add(bRand);
 			jPan3.add(bHell);
 			jPan3.add(bDunkel);
+			
+			JPanel jPan4 = new JPanel();
+			jPan4.add(bConnect);
+			jPan4.add(bEnd);
 
+			JPanel jPanModus = new JPanel();
+			jPanModus.add(bRed);
+			jPanModus.add(bRGB);
+			
 			Label lSpeed = new Label("Speed Regulator: Currently: " + speed);
 			JScrollBar jsSpeed = new JScrollBar(JScrollBar.HORIZONTAL, speed, 0, 1, speed*2);
 			jsSpeed.addAdjustmentListener(e->{
@@ -218,15 +308,38 @@ public class RobotControl {
 	            lSpeed.setText("Speed Regulator: Currently: " + speed);
 	            System.out.println("Speed wurde geaendert: " + speed);
 	        });
+
+			center.add(new JLabel("Verbindung"));
+			center.add(jPan4);
+			center.add(new JLabel("Modus"));
+			center.add(jPanModus);
+			center.add(new Label("Kalibrieren"));
+			center.add(jPan3);
+			center.add(new Label("Remote control"));
+			center.add(jPan1);
+			center.add(new JLabel("Linie folgen Befehle"));
+			center.add(jPan2);
+			center.add(lSpeed);
+			center.add(jsSpeed);
 			
-			frame.add(lKalibrieren);
-			frame.add(jPan3);
-			frame.add(l1);
-			frame.add(jPan1);
-			frame.add(new JLabel("Komplexe Befehle"));
-			frame.add(jPan2);
-			frame.add(lSpeed);
-			frame.add(jsSpeed);
+			
+			east.add(lConnect);
+			east.add(lHell);
+			east.add(lDunkel);
+			east.add(lAbweichung);
+			east.add(lTurn);
+			east.add(lDistance);
+			east.add(lIAbweichung);
+			
+			frame.addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					beenden();
+					e.getWindow().dispose();
+				}
+			});
+			frame.add(BorderLayout.EAST, east);
+			frame.add(BorderLayout.CENTER, center);
 			frame.pack();
 			frame.setVisible(true);
 			
@@ -246,7 +359,7 @@ public class RobotControl {
 		try {
 			if (ev3==null) {
 //				ev3=new RemoteEV3("10.0.1.1");
-				ev3 = new RemoteEV3("192.168.0.109");
+				ev3 = new RemoteEV3("192.168.0.210");
 			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
@@ -267,10 +380,10 @@ public class RobotControl {
 //		Port portS2 = ev3.getPort("S2");
 		
 		if (motorA==null) {
-			motorA = ev3.createRegulatedMotor("A", 'L');
+			motorA = ev3.createRegulatedMotor("C", 'L');
 		}
 		if (motorB==null) {
-			motorB = ev3.createRegulatedMotor("B", 'L');
+			motorB = ev3.createRegulatedMotor("D", 'L');
 		}
 		if (motorC==null) {
 //			motorC = ev3.createRegulatedMotor("C, 'L');
@@ -279,41 +392,37 @@ public class RobotControl {
 //			motorD = ev3.createRegulatedMotor("D", 'L');
 		}
 		mControl = new MotorControl(motorA, motorB);
-		if (farbSensor==null) {
-			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
-		}else {
+		if (farbSensor!=null) {
 			try {
 				farbSensor.close();
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+		if (rotModus) {
+			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "Red");
+		}else {
 			farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "RGB");
 		}
-		if (ultraSensor == null) {
-			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "Distance");
-		}
-		else {
+		if (ultraSensor != null) {
 			try {
 				ultraSensor.close();
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "Distance");
 		}
-		if (gyroSensor == null) {
-//			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
-		}
-		else {
+		ultraSensor=ev3.createSampleProvider("S2", "lejos.hardware.sensor.EV3UltrasonicSensor", "Distance");
+		if (gyroSensor != null) {
 			try {
 				gyroSensor.close();
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-//			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
 		}
+//			ev3.createSampleProvider("S3", "lejos.hardware.sensor.EV3GyroSensor", "AngleAndRate");
 		rMoves = new RobotMoves(farbSensor, mControl, ultraSensor, gyroSensor, speed);		
 		System.out.println("Setup fetig");
 	}
@@ -321,7 +430,7 @@ public class RobotControl {
 	public static void main(String[] args) {
 		new RobotControl();
 	}
-	public static void beeneden() {
+	public static void beenden() {
 		try {
 			System.out.println("beende Motoren:");
 			if(motorA!=null) {
@@ -371,5 +480,16 @@ public class RobotControl {
 			e.printStackTrace();
 			System.out.println("Fehler beim beenden");
 		}
+	}
+	public static void setCurrentValues(float abweichung, int turn, float[] distance, float iAbweichung) {
+		lAbweichung.setText("Abweichung: " +abweichung);
+		lTurn.setText("Turn: " + turn);
+		String txt="";
+		for (int i = 0; i < distance.length; i++) {
+			txt+=distance[i] + "\n";
+		}
+		lDistance.setText("Distance: " + txt);
+		lIAbweichung.setText("I-Abweichung: " + iAbweichung);
+		
 	}
 }
