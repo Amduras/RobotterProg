@@ -66,6 +66,7 @@ public class RobotControl {
 					followLine = false;
 					mControl.drive(0, 0);
 					System.out.println("Stop");
+					rMoves.reset();
 				}
 			});
 			JRadioButton bZurueck= new JRadioButton("Zurueck");
@@ -74,6 +75,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					RobotControl.setup();
+					rMoves.reset();
 					lConnect.setText("Verbindungsstatus: Connected");
 				}
 			});
@@ -186,7 +188,7 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					followLine = false;
-					mControl.drive(100, 0);
+					mControl.drive(speed, 0);
 					System.out.println("Vorwaerts");
 				}
 			});
@@ -318,6 +320,8 @@ public class RobotControl {
 			frame.addWindowListener(new WindowAdapter() {
 				@Override
 				public void windowClosing(WindowEvent e) {
+					followLine=false;
+					mControl.drive(0,0);
 					beenden();
 					e.getWindow().dispose();
 				}
@@ -462,9 +466,9 @@ public class RobotControl {
 		lAbweichung.setText("Abweichung: " +abweichung);
 		lTurn.setText("Turn: " + turn);
 		String txt="";
-		for (int i = 0; i < distance.length; i++) {
-			txt+=distance[i] + "\n";
-		}
+//		for (int i = 0; i < distance.length; i++) {
+//			txt+=distance[i] + "\n";
+//		}
 		lDistance.setText("Distance: " + txt);
 		lIAbweichung.setText("I-Abweichung: " + iAbweichung);
 	}

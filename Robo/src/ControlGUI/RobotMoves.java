@@ -20,18 +20,21 @@ public class RobotMoves {
 	private float[] aRand = new float[3];
 	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
-	private float vorvorletzteAbweichung = 0, vorletzteAbweichung = 0, letzteAbweichung = 0, zuketzt = 0;
-	private float KONSTANTE_P = 10, KONSTANTE_I = 0.5f, KONSTANTE_D = 750;
+	private float vorvorletzteAbweichung = 0, vorletzteAbweichung = 0, letzteAbweichung = 0, zuletzt = 0, vorletzte=0;
+	private float KONSTANTE_P = 10, KONSTANTE_I = 0, KONSTANTE_D = 750;
+	private float abweichung=0;
 	//Kp=10 Ki=0 Kd=500 für Linie folgen
 	private int farbe = 0;
-	private volatile int speed=0;
+	private volatile int speed=50;
 	private volatile boolean followLine=false;
 	private volatile boolean evade=true; //Wenn evade==true: Roboter weicht Hindernissen aus ? Folgt anderen Robotern
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
 	private float[] sample;
-	private float grenzwert=50;
+	private float grenzwert=0.7f;
 	private int turn = 0;
+	private boolean first=true;
+	private int timerAbzug=0;
 	Timestamp time;
 	
 			
@@ -70,46 +73,77 @@ public class RobotMoves {
 			if (iAbweichung<-40) {
 				iAbweichung=-40;
 			}
-			float abweichung=pTurn-zuketzt;
-			if(((vorvorletzteAbweichung>=grenzwert || vorletzteAbweichung>=grenzwert || letzteAbweichung>=grenzwert || zuketzt>=grenzwert || pTurn>=grenzwert) && (pTurn<-80 || pTurn>80)) ||((vorvorletzteAbweichung<=-grenzwert || vorletzteAbweichung<=-grenzwert || letzteAbweichung<=-grenzwert || zuketzt<=-grenzwert || pTurn>=grenzwert) && (pTurn<-80 || pTurn>80))) {
-				if (pTurn>80) {
-					turn=100;
-				}else {
-					turn=-100;
-				}
-			}else {
-				turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
+			if (first) {
+				zuletzt=pTurn;
+				vorletzte=pTurn;
+				first=false;
 			}
+			abweichung=pTurn-zuletzt;
+			differenz=vorletzte-pTurn;
+			System.out.println(differenz + " und pTurn:" + pTurn);
+			if((differenz>=grenzwert ||differenz<=-grenzwert) && step==StepEnum.FOLLOWLINE) {
+				if (differenz>=grenzwert) {
+					step=StepEnum.TURNPOSITIV;
+				}else {
+					step=StepEnum.TURNNEGATIV;
+				}
+				System.out.println("START TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			}
+			turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
 			vorvorletzteAbweichung = vorletzteAbweichung;
 			vorletzteAbweichung = letzteAbweichung;
 			letzteAbweichung = abweichung;
-			zuketzt = pTurn;
-
+			vorletzte=zuletzt;
+			zuletzt = pTurn;
+			if (turn>100) {
+				turn=100;
+			}
+			if (turn<-100) {
+				turn=-100;
+			}
 			switch(step) {
-				case FOLLOWLINE:
-					sample=ultraSensor.fetchSample();
-					//Sample Range between 0.03-2,5
-					if (sample[0]>=0.3) {
-						mControl.drive(speed, turn);
+				case TURNNEGATIV:
+					if (differenz<-0.2) {
+						mControl.drive(speed, 100);
 					}else {
-						if ( sample[0]>0.1) {
-							if (evade) {
-								evade();
-							}else {
-								double slow=(sample[0]-0.1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
-								mControl.drive((int)slow*speed, turn);
-							}
-						}else {
-							if (sample[0]<=0.1) {
-								if (evade) {
-									//mControl.drive(-speed, 0);
-									mControl.drive(0, 0);
-								}else {
-									mControl.drive(0, 0);
-								}
-							}
-						}
+						step=StepEnum.FOLLOWLINE;
+						mControl.drive(speed, turn);
+						System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					}
+					break;
+				case TURNPOSITIV:
+					if (differenz>0.2) {
+						mControl.drive(speed, -100);
+					}else {
+						step=StepEnum.FOLLOWLINE;
+						mControl.drive(speed, turn);
+						System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					}
+					break;
+				case FOLLOWLINE:
+//					sample=ultraSensor.fetchSample();
+					//Sample Range between 0.03-2,5
+//					if (sample[0]>=0.3) {
+						mControl.drive(speed, turn);
+//					}else {
+//						if ( sample[0]>0.1) {
+//							if (evade) {
+//								evade();
+//							}else {
+//								double slow=(sample[0]-0.1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
+//								mControl.drive((int)slow*speed, turn);
+//							}
+//						}else {
+//							if (sample[0]<=0.1) {
+//								if (evade) {
+//									//mControl.drive(-speed, 0);
+//									mControl.drive(0, 0);
+//								}else {
+//									mControl.drive(0, 0);
+//								}
+//							}
+//						}
+//					}
 					break;
 				case EVADE1:
 					break;
@@ -125,11 +159,11 @@ public class RobotMoves {
 					break;
 			}
 			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+//			try {
+//				Thread.sleep(20);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 	}
 	
 	
@@ -323,5 +357,14 @@ public class RobotMoves {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	public void reset() {
+		iAbweichung=0;
+		zuletzt=0;
+		abweichung=0;
+		letzteAbweichung=0;
+		vorletzteAbweichung=0;
+		vorvorletzteAbweichung=0;
+		first=true;
 	}
 }
