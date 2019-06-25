@@ -1,6 +1,7 @@
 package versuche;
 
 import java.rmi.RemoteException;
+import java.security.Timestamp;
 import java.sql.Time;
 
 import lejos.hardware.lcd.LCD;
@@ -14,18 +15,20 @@ public class RobotMoves {
 	private RMISampleProvider ultraSensor;
 	private RMISampleProvider gyroSensor;
 	private SampleProvider distance=null;
-	private float[] aHell;
-	private float[] aDunkel;
+	private float[] aHell = new float[3];
+	private float[] aDunkel = new float[3];
 	private float[] aRand = new float[3];
 	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, zuletzt = 0, middle=0;
-	private float KONSTANTE_P = 30, KONSTANTE_I = -0.1f, KONSTANTE_D = 0;
+	private float KONSTANTE_P = 0, KONSTANTE_I = 0, KONSTANTE_D = 100;
 	private int farbe = 0;
 	private volatile int speed=0;
 	private volatile boolean followLine=false;
 	private volatile boolean evade=true; //Wenn evade==true: Roboter weicht Hindernissen aus ? Folgt anderen Robotern
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
+	private float[] sample;
+	Timestamp time;
 	
 			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
@@ -76,41 +79,48 @@ public class RobotMoves {
 				turn = -90;
 			}
 			
-			float[] sample = new float[distance.sampleSize()];
-			distance.fetchSample(sample, 0);
-
-			//Sample Range between 0.03-2,5
-			if (sample[0]>=0.3) {
-				mControl.drive(speed, turn);
-			}else {
-				if ( sample[0]>0.1 && sample[0]<0.3 ) {
-					if (evade) {
-						evade();
+			switch(step) {
+				case FOLLOWLINE:
+					sample=ultraSensor.fetchSample();
+					//Sample Range between 0.03-2,5
+					if (sample[0]>=0.3) {
+						mControl.drive(speed, turn);
 					}else {
-						double slow=(sample[0]-1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
-						mControl.drive((int)slow*speed, turn);
-					}
-				}else {
-					if (sample[0]<=0.1) {
-						if (evade) {
-							mControl.drive(-speed, 0);
+						if ( sample[0]>0.1 && sample[0]<0.3 ) {
+							if (evade) {
+								evade();
+							}else {
+								double slow=(sample[0]-1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
+								mControl.drive((int)slow*speed, turn);
+							}
 						}else {
-							mControl.drive(0, 0);
+							if (sample[0]<=0.1) {
+								if (evade) {
+									mControl.drive(-speed, 0);
+								}else {
+									mControl.drive(0, 0);
+								}
+							}
 						}
 					}
-				}
+					break;
+				case EVADE1:
+					
+					break;
+				case EVADE2:
+					break;
+				case EVADE3:
+					break;
+				case EVADE4:
+					break;
+				case EVADE5:
+					break;
+				case EVADE6:
+					break;
 			}
 			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);			
 	}
 	
-	public static void sleep(int time) {
-		try {
-			Thread.sleep(time);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 	
 	public void evade() {
 		
@@ -294,5 +304,13 @@ public class RobotMoves {
 		middle=0;
 		hellArea=0;
 		dunkelArea=0;
+	}
+	public static void sleep(int time) {
+		try {
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

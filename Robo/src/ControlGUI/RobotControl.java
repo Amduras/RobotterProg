@@ -44,7 +44,7 @@ public class RobotControl {
 	
 	public RobotControl(){
 		try {
-			
+			setup();
 			//View
 			JFrame frame= new JFrame("Robot Control");
 			frame.setSize(2000, 2000);
@@ -380,10 +380,10 @@ public class RobotControl {
 //		Port portS2 = ev3.getPort("S2");
 		
 		if (motorA==null) {
-			motorA = ev3.createRegulatedMotor("C", 'L');
+			motorA = ev3.createRegulatedMotor("A", 'L');
 		}
 		if (motorB==null) {
-			motorB = ev3.createRegulatedMotor("D", 'L');
+			motorB = ev3.createRegulatedMotor("B", 'L');
 		}
 		if (motorC==null) {
 //			motorC = ev3.createRegulatedMotor("C, 'L');
