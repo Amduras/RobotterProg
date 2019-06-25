@@ -19,8 +19,10 @@ public class RobotMoves {
 	private float[] aDunkel = new float[3];
 	private float[] aRand = new float[3];
 	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
-	private float hellArea = 0, iAbweichung = 0, zuletzt = 0, middle=0;
-	private float KONSTANTE_P = 0, KONSTANTE_I = 0, KONSTANTE_D = 100;
+	private float hellArea = 0, iAbweichung = 0, middle=0;
+	private float vorvorletzteAbweichung = 0, vorletzteAbweichung = 0, letzteAbweichung = 0, zuketzt = 0;
+	private float KONSTANTE_P = 10, KONSTANTE_I = 0.5f, KONSTANTE_D = 750;
+	//Kp=10 Ki=0 Kd=500 für Linie folgen
 	private int farbe = 0;
 	private volatile int speed=0;
 	private volatile boolean followLine=false;
@@ -28,6 +30,8 @@ public class RobotMoves {
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
 	private float[] sample;
+	private float grenzwert=50;
+	private int turn = 0;
 	Timestamp time;
 	
 			
@@ -41,7 +45,6 @@ public class RobotMoves {
 	
 	public void followLine() throws RemoteException {
 			float[] colors=farbSensor.fetchSample();
-//			float nvalue=colors[farbe]-aRand[farbe];
 			float nvalue=colors[farbe]-middle;
 			if (nvalue==0) {
 				pTurn=0;
@@ -54,31 +57,34 @@ public class RobotMoves {
 					}
 				}
 			}
-//			System.out.println("pTurn: " + pTurn);
 			if (pTurn>1) {
-				
 				pTurn=1;
 			}
 			if (pTurn<-1) {
 				pTurn=-1;
 			}
 			iAbweichung += pTurn;
-			if (iAbweichung>200) {
-				iAbweichung=200;
+			if (iAbweichung>40) {
+				iAbweichung=40;
 			}
-			float abweichung=pTurn-zuletzt;
-			int turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
-//			System.out.println("Tu;rn: " + turn);
-//			System.out.println("pTurn-Zuletzt: " + (pTurn-zuletzt));
-//			System.out.println("I-Abweichung: " + iAbweichung);
-			zuletzt = pTurn;
-			if(turn > 90) {
-				turn = 90;
+			if (iAbweichung<-40) {
+				iAbweichung=-40;
 			}
-			if(turn < -90) {
-				turn = -90;
+			float abweichung=pTurn-zuketzt;
+			if(((vorvorletzteAbweichung>=grenzwert || vorletzteAbweichung>=grenzwert || letzteAbweichung>=grenzwert || zuketzt>=grenzwert || pTurn>=grenzwert) && (pTurn<-80 || pTurn>80)) ||((vorvorletzteAbweichung<=-grenzwert || vorletzteAbweichung<=-grenzwert || letzteAbweichung<=-grenzwert || zuketzt<=-grenzwert || pTurn>=grenzwert) && (pTurn<-80 || pTurn>80))) {
+				if (pTurn>80) {
+					turn=100;
+				}else {
+					turn=-100;
+				}
+			}else {
+				turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
 			}
-			
+			vorvorletzteAbweichung = vorletzteAbweichung;
+			vorletzteAbweichung = letzteAbweichung;
+			letzteAbweichung = abweichung;
+			zuketzt = pTurn;
+
 			switch(step) {
 				case FOLLOWLINE:
 					sample=ultraSensor.fetchSample();
@@ -86,17 +92,18 @@ public class RobotMoves {
 					if (sample[0]>=0.3) {
 						mControl.drive(speed, turn);
 					}else {
-						if ( sample[0]>0.1 && sample[0]<0.3 ) {
+						if ( sample[0]>0.1) {
 							if (evade) {
 								evade();
 							}else {
-								double slow=(sample[0]-1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
+								double slow=(sample[0]-0.1)/0.2; //abhängig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
 								mControl.drive((int)slow*speed, turn);
 							}
 						}else {
 							if (sample[0]<=0.1) {
 								if (evade) {
-									mControl.drive(-speed, 0);
+									//mControl.drive(-speed, 0);
+									mControl.drive(0, 0);
 								}else {
 									mControl.drive(0, 0);
 								}
@@ -105,7 +112,6 @@ public class RobotMoves {
 					}
 					break;
 				case EVADE1:
-					
 					break;
 				case EVADE2:
 					break;
@@ -118,7 +124,12 @@ public class RobotMoves {
 				case EVADE6:
 					break;
 			}
-			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);			
+			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 	}
 	
 	

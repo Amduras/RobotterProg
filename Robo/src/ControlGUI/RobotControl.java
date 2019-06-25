@@ -41,6 +41,7 @@ public class RobotControl {
 	static Label lDistance = new Label("Distance:");
 	static Label lIAbweichung = new Label("I-Abweichung:");
 	static boolean rotModus=false;
+	private static Thread followLineThread;
 	
 	public RobotControl(){
 		try {
@@ -72,8 +73,8 @@ public class RobotControl {
 			bConnect.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-						RobotControl.setup();
-						lConnect.setText("Verbindungsstatus: Connected");
+					RobotControl.setup();
+					lConnect.setText("Verbindungsstatus: Connected");
 				}
 			});
 			
@@ -117,6 +118,7 @@ public class RobotControl {
 					followLine=false;
 					mControl.drive(0, 0);
 					bStop.setSelected(true);
+					
 					if (farbSensor!=null) {
 						try {
 							farbSensor.close();
@@ -229,34 +231,16 @@ public class RobotControl {
 			bAusweichen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					followLine = true;
-					new Thread() {
-						public void run() {
-							while(followLine) {
-								try {
-									rMoves.setEvade(true);
-									rMoves.followLine();
-								} catch (RemoteException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							}
-						}
-					}.start();
+					rMoves.setEvade(true);
+					startFollowLine();
 				}
 			});
 			JRadioButton bFolgen= new JRadioButton("Roboter folgen");
 			bFolgen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					try {
-						followLine = true;
-						rMoves.setEvade(false);
-						rMoves.followLine();
-					} catch (RemoteException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
+					rMoves.setEvade(false);
+					startFollowLine();
 				}
 			});
 			
@@ -371,14 +355,7 @@ public class RobotControl {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-//		Port portA = ev3.getPort("A");
-//		Port portB = ev3.getPort("B");
-//		Port portC = ev3.getPort("C");
-//		Port portD = ev3.getPort("D");
-//		Port portS1 = ev3.getPort("S1");
-//		Port portS2 = ev3.getPort("S2");
-		
+				
 		if (motorA==null) {
 			motorA = ev3.createRegulatedMotor("A", 'L');
 		}
@@ -490,6 +467,24 @@ public class RobotControl {
 		}
 		lDistance.setText("Distance: " + txt);
 		lIAbweichung.setText("I-Abweichung: " + iAbweichung);
-		
+	}
+	private void startFollowLine() {
+		followLine=true;
+		followLineThread = new Thread() {
+			public void run() {
+				while (followLine) {
+					try {
+						rMoves.followLine();
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		followLineThread.start();
+	}
+	private void stopFollowLine() {
+		followLine=false;
 	}
 }
