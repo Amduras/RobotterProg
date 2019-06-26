@@ -262,16 +262,16 @@ public class RobotControl {
 			modusButtons.add(bRGB);
 			
 			JPanel jPan1 = new JPanel();
-			jPan1.add(bVorwaerts);
-			jPan1.add(bRueckwaerts);
-			jPan1.add(bRechts);
-			jPan1.add(bLinks);
-			jPan1.add(bZurueck);
+//			jPan1.add(bVorwaerts);
+//			jPan1.add(bRueckwaerts);
+//			jPan1.add(bRechts);
+//			jPan1.add(bLinks);
+//			jPan1.add(bZurueck);
 			jPan1.add(bStop);
 			
 			JPanel jPan2 = new JPanel();
 			jPan2.add(bAusweichen);
-			jPan2.add(bFolgen);
+//			jPan2.add(bFolgen);
 
 			JPanel jPan3 = new JPanel();
 			//jPan3.add(bRand);
@@ -279,12 +279,12 @@ public class RobotControl {
 			jPan3.add(bDunkel);
 			
 			JPanel jPan4 = new JPanel();
-			jPan4.add(bConnect);
-			jPan4.add(bEnd);
+//			jPan4.add(bConnect);
+//			jPan4.add(bEnd);
 
 			JPanel jPanModus = new JPanel();
-			jPanModus.add(bRed);
-			jPanModus.add(bRGB);
+//			jPanModus.add(bRed);
+//			jPanModus.add(bRGB);
 			
 			Label lSpeed = new Label("Speed Regulator: Currently: " + speed);
 			JScrollBar jsSpeed = new JScrollBar(JScrollBar.HORIZONTAL, speed, 0, 1, speed*2);
@@ -292,7 +292,7 @@ public class RobotControl {
 				speed=jsSpeed.getValue();
 	            rMoves.setSpeed(speed);
 	            lSpeed.setText("Speed Regulator: Currently: " + speed);
-	            System.out.println("Speed wurde geaendert: " + speed);
+//	            System.out.println("Speed wurde geaendert: " + speed);
 	        });
 
 			center.add(new JLabel("Verbindung"));

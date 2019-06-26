@@ -18,10 +18,12 @@ public class RobotMoves {
 	private float[] aHell = new float[3];
 	private float[] aDunkel = new float[3];
 	private float[] aRand = new float[3];
-	private float hell = 0, pTurn = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
+	private volatile float pTurn = 0;
+	private float hell = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
 	private float vorvorletzteAbweichung = 0, vorletzteAbweichung = 0, letzteAbweichung = 0, zuletzt = 0, vorletzte=0;
-	private float KONSTANTE_P = 10, KONSTANTE_I = 0, KONSTANTE_D = 750;
+	private float KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
+	//Linie fahren KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	private float abweichung=0;
 	//Kp=10 Ki=0 Kd=500 fuer Linie folgen
 	private int farbe = 0;
@@ -31,11 +33,11 @@ public class RobotMoves {
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
 	private float[] sample;
-	private float grenzwert=0.55f;
-	private int turn = 0;
-	private boolean first=true;
-	private int timerAbzug=0;
-	long time;
+	private float grenzwert=0.7f;
+	private volatile int turn = 0;
+	private volatile boolean first=true;
+	private volatile int timerAbzug=0;
+	private volatile long time;
 	
 			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
@@ -80,12 +82,14 @@ public class RobotMoves {
 			}
 			abweichung=pTurn-zuletzt;
 			differenz=vorletzte-pTurn;
-			System.out.println(differenz + " und pTurn:" + pTurn);
+			System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
 			if((differenz>=grenzwert ||differenz<=-grenzwert) && step==StepEnum.FOLLOWLINE) {
 				if (differenz>=grenzwert) {
-					step=StepEnum.TURNPOSITIV;
+//					step=StepEnum.TURNPOSITIV;
+					System.out.println("positiv");
 				}else {
-					step=StepEnum.TURNNEGATIV;
+//					step=StepEnum.TURNNEGATIV;
+					System.out.println("negativ");
 				}
 				System.out.println("START TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			}
@@ -106,13 +110,14 @@ public class RobotMoves {
 			}
 			switch(step) {
 				case TURNNEGATIV:
-					mControl.motorA.rotate(135,true);
-					mControl.motorB.rotate(-135,true);
+					mControl.motorA.rotate(155,true);
+					mControl.motorB.rotate(-155,true);
 					while(mControl.motorB.isMoving())
 					{
 						;
 					}
-					while (pTurn<0.5)
+					System.out.println("NEGATIV!! " + pTurn);
+					while (pTurn<0.1)
 					{
 						colors=farbSensor.fetchSample();
 						nvalue=colors[farbe]-middle;
@@ -138,19 +143,24 @@ public class RobotMoves {
 						mControl.drive(speed, 0);
 						sleep(15);
 					}
-
+//					mControl.drive(100, 100);
+//					System.out.println("Turn: " + turn + ", pTurn: " + pTurn + ", Abweichung: " + abweichung);
+//					mControl.drive(speed, turn);
+//					sleep(500);
 					step=StepEnum.FOLLOWLINE;
+					System.out.println(pTurn);
 					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					first = true;
 					break;
 				case TURNPOSITIV:
-					mControl.motorA.rotate(-135,true);
-					mControl.motorB.rotate(135,true);
+					mControl.motorA.rotate(-155,true);
+					mControl.motorB.rotate(155,true);
 					while(mControl.motorB.isMoving())
 					{
 						;
 					}
-					while (pTurn>-0.5)
+					System.out.println("POSITIV!!: " + pTurn);
+					while (pTurn>-0.1)
 					{
 						colors=farbSensor.fetchSample();
 						nvalue=colors[farbe]-middle;
@@ -176,36 +186,39 @@ public class RobotMoves {
 						mControl.drive(speed, 0);
 						sleep(15);
 					}
-
+					System.out.println("Turn: " + turn + ", pTurn: " + pTurn + ", Abweichung: " + abweichung);
+//					mControl.drive(speed, turn);
+//					sleep(500);
 					step=StepEnum.FOLLOWLINE;
+					System.out.println(pTurn);
 					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					first = true;
 					break;
 				case FOLLOWLINE:
 					sample=ultraSensor.fetchSample();
 					//Sample Range between 0.03-2,5
-					if (sample[0]>=0.3) {
+//					if (sample[0]>=0.3) {
 						mControl.drive(speed, turn);
-					}else {
-						if ( sample[0]>0.1) {
-							if (evade) {
-								//turn<=90 Grad rechts
-								mControl.drive(50, -100);
-								sleep(480);
-								step=StepEnum.EVADE1;
-								time= System.currentTimeMillis();
-							}else {
-								double slow=(sample[0]-0.1)/0.2; //abhaengig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
-								mControl.drive((int)slow*speed, turn);
-							}
-						}else {
-							if (evade) {
-								mControl.drive(-speed, 0);
-							}else {
-								mControl.drive(0, 0);
-							}
-						}
-					}
+//					}else {
+//						if ( sample[0]>0.1) {
+//							if (evade) {
+//								//turn<=90 Grad rechts
+//								mControl.drive(50, -100);
+//								sleep(480);
+//								step=StepEnum.EVADE1;
+//								time= System.currentTimeMillis();
+//							}else {
+//								double slow=(sample[0]-0.1)/0.2; //abhaengig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
+//								mControl.drive((int)slow*speed, turn);
+//							}
+//						}else {
+//							if (evade) {
+//								mControl.drive(-speed, 0);
+//							}else {
+//								mControl.drive(0, 0);
+//							}
+//						}
+//					}
 					break;
 				case EVADE1:
 					//gerade aus fahren
@@ -265,7 +278,7 @@ public class RobotMoves {
 			}
 			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
 //			try {
-//				Thread.sleep(20);
+//				Thread.sleep(200);
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
