@@ -31,7 +31,7 @@ public class RobotMoves {
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
 	private float[] sample;
-	private float grenzwert=0.7f;
+	private float grenzwert=0.55f;
 	private int turn = 0;
 	private boolean first=true;
 	private int timerAbzug=0;
@@ -106,22 +106,80 @@ public class RobotMoves {
 			}
 			switch(step) {
 				case TURNNEGATIV:
-					if (differenz>0.2) {
-						mControl.drive(speed, 100);
-					}else {
-						step=StepEnum.FOLLOWLINE;
-						mControl.drive(speed, turn);
-						System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					mControl.motorA.rotate(135,true);
+					mControl.motorB.rotate(-135,true);
+					while(mControl.motorB.isMoving())
+					{
+						;
 					}
+					while (pTurn<0.5)
+					{
+						colors=farbSensor.fetchSample();
+						nvalue=colors[farbe]-middle;
+						if (nvalue==0) {
+							pTurn=0;
+						}else {
+							if(nvalue<0) {
+								pTurn=nvalue/hellArea;
+							}else {
+								if(nvalue>0) {
+									pTurn=nvalue/dunkelArea;
+								}
+							}
+						}
+						mControl.motorA.stop(true);
+						mControl.motorB.stop(true);
+						mControl.motorA.rotate(20,true);
+						mControl.motorB.rotate(-20,true);
+						while(mControl.motorB.isMoving())
+						{
+							;
+						}
+						mControl.drive(speed, 0);
+						sleep(15);
+					}
+
+					step=StepEnum.FOLLOWLINE;
+					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					first = true;
 					break;
 				case TURNPOSITIV:
-					if (differenz<-0.2) {
-						mControl.drive(speed, -100);
-					}else {
-						step=StepEnum.FOLLOWLINE;
-						mControl.drive(speed, turn);
-						System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					mControl.motorA.rotate(-135,true);
+					mControl.motorB.rotate(135,true);
+					while(mControl.motorB.isMoving())
+					{
+						;
 					}
+					while (pTurn>-0.5)
+					{
+						colors=farbSensor.fetchSample();
+						nvalue=colors[farbe]-middle;
+						if (nvalue==0) {
+							pTurn=0;
+						}else {
+							if(nvalue<0) {
+								pTurn=nvalue/hellArea;
+							}else {
+								if(nvalue>0) {
+									pTurn=nvalue/dunkelArea;
+								}
+							}
+						}
+						mControl.motorA.stop(true);
+						mControl.motorB.stop(true);
+						mControl.motorA.rotate(-20,true);
+						mControl.motorB.rotate(20,true);
+						while(mControl.motorB.isMoving())
+						{
+							;
+						}
+						mControl.drive(speed, 0);
+						sleep(15);
+					}
+
+					step=StepEnum.FOLLOWLINE;
+					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					first = true;
 					break;
 				case FOLLOWLINE:
 					sample=ultraSensor.fetchSample();
