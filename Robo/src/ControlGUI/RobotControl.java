@@ -52,8 +52,8 @@ public class RobotControl {
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setLayout(new BorderLayout());
 			
-			JPanel center = new JPanel(new GridLayout(12, 0));
-			JPanel east = new JPanel(new GridLayout(10, 0));
+			JPanel center = new JPanel(new GridLayout(8, 0));
+			JPanel east = new JPanel(new GridLayout(7, 0));
 			
 			Label lHell=new Label("Hell:");
 			Label lDunkel=new Label("Dunkel:");
@@ -69,51 +69,8 @@ public class RobotControl {
 					rMoves.reset();
 				}
 			});
-			JRadioButton bZurueck= new JRadioButton("Zurueck");
-			JButton bConnect= new JButton("Verbinden");
-			bConnect.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					RobotControl.setup();
-					rMoves.reset();
-					lConnect.setText("Verbindungsstatus: Connected");
-				}
-			});
-			
-			JButton bEnd= new JButton("Verbindung trennen");
-			bEnd.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					followLine = false;
-					beenden();
-					lConnect.setText("Verbindungsstatus: Discconected");
-				}
-			});
-			JRadioButton bRed= new JRadioButton("Rot-Modus");
-			bConnect.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					rotModus=true;
-					followLine=false;
-					mControl.drive(0, 0);
-					bStop.setSelected(true);
-					if (farbSensor!=null) {
-						try {
-							farbSensor.close();
-						} catch (RemoteException e2) {
-							// TODO Auto-generated catch block
-							e2.printStackTrace();
-						}
-					}
-					farbSensor = ev3.createSampleProvider("S1", "lejos.hardware.sensor.EV3ColorSensor", "Red");
-					rMoves.setRotModus(true, farbSensor);
-					lHell.setText("Hell:");
-					lDunkel.setText("Dunkel:");
-				}
-			});
-			
 			JRadioButton bRGB= new JRadioButton("RGB-Modus", true);
-			bEnd.addActionListener(new ActionListener() {
+			bRGB.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					rotModus=false;
@@ -171,18 +128,6 @@ public class RobotControl {
 					}
 				}
 			});
-			JButton bRand= new JButton("Linie");
-			bRand.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					try {
-						followLine = false;
-						rMoves.setArrayRand();
-					} catch (RemoteException e1) {
-						e1.printStackTrace();
-					}
-				}
-			});
 			JRadioButton bVorwaerts= new JRadioButton("Vorwaerts");
 			bVorwaerts.addActionListener(new ActionListener() {
 				@Override
@@ -219,20 +164,11 @@ public class RobotControl {
 					System.out.println("Rechts Kurve");
 				}
 			});
-			bZurueck.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-//					try {
-//						rMoves.zurueck();
-//					} catch (RemoteException e1) {
-//						e1.printStackTrace();
-//					}
-				}
-			});
 			JRadioButton bAusweichen= new JRadioButton("Ausweichen");
 			bAusweichen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					rMoves.setEvade(true);
 					startFollowLine();
 				}
@@ -241,7 +177,16 @@ public class RobotControl {
 			bFolgen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(false);
 					rMoves.setEvade(false);
+					startFollowLine();
+				}
+			});
+			JRadioButton bFollowLine= new JRadioButton("Roboter folgen");
+			bFolgen.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					rMoves.setFollowLine(true);
 					startFollowLine();
 				}
 			});
@@ -252,13 +197,12 @@ public class RobotControl {
 			manualButtons.add(bRueckwaerts);
 			manualButtons.add(bRechts);
 			manualButtons.add(bLinks);
-			manualButtons.add(bZurueck);
 			manualButtons.add(bStop);
 			manualButtons.add(bAusweichen);
 			manualButtons.add(bFolgen);
+			manualButtons.add(bFollowLine);
 			
 			ButtonGroup modusButtons = new ButtonGroup();
-			modusButtons.add(bRed);
 			modusButtons.add(bRGB);
 			
 			JPanel jPan1 = new JPanel();
@@ -266,25 +210,19 @@ public class RobotControl {
 			jPan1.add(bRueckwaerts);
 			jPan1.add(bRechts);
 			jPan1.add(bLinks);
-//			jPan1.add(bZurueck);
 			jPan1.add(bStop);
 			
 			JPanel jPan2 = new JPanel();
 			jPan2.add(bAusweichen);
 			jPan2.add(bFolgen);
+			jPan2.add(bFollowLine);
 
 			JPanel jPan3 = new JPanel();
-			//jPan3.add(bRand);
 			jPan3.add(bHell);
 			jPan3.add(bDunkel);
 			
-			JPanel jPan4 = new JPanel();
-//			jPan4.add(bConnect);
-//			jPan4.add(bEnd);
-
 			JPanel jPanModus = new JPanel();
-//			jPanModus.add(bRed);
-//			jPanModus.add(bRGB);
+			jPanModus.add(bRGB);
 			
 			Label lSpeed = new Label("Speed Regulator: Currently: " + speed);
 			JScrollBar jsSpeed = new JScrollBar(JScrollBar.HORIZONTAL, speed, 0, 1, speed*2);
@@ -292,13 +230,8 @@ public class RobotControl {
 				speed=jsSpeed.getValue();
 	            rMoves.setSpeed(speed);
 	            lSpeed.setText("Speed Regulator: Currently: " + speed);
-//	            System.out.println("Speed wurde geaendert: " + speed);
 	        });
 
-			center.add(new JLabel("Verbindung"));
-			center.add(jPan4);
-			center.add(new JLabel("Modus"));
-			center.add(jPanModus);
 			center.add(new Label("Kalibrieren"));
 			center.add(jPan3);
 			center.add(new Label("Remote control"));
@@ -338,13 +271,6 @@ public class RobotControl {
 			
 			
 		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	public static void sleep(int time) {
-		try {
-			Thread.sleep(time);
-		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

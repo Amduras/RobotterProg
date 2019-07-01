@@ -24,11 +24,10 @@ public class RobotMoves {
 	private volatile float pTurn = 0;
 	private float hell = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
-	private float zuletzt = 0, vorletzte=0;
+	private float zuletzt = 0;
+	private int iMax=1;
 	private float KONSTANTE_P = 81, KONSTANTE_I = 10f, KONSTANTE_D = 500;
-	//Linie fahren KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	private float abweichung=0;
-	//Kp=10 Ki=0 Kd=500 fuer Linie folgen
 	private int farbe = 0;
 	private volatile int speed=70;
 	private volatile boolean followLine=false;
@@ -36,14 +35,9 @@ public class RobotMoves {
 	private boolean rotModus=false;
 	private StepEnum step =StepEnum.FOLLOWLINE;
 	private float[] sample;
-	private float grenzwert=0.7f;
 	private volatile int turn = 0;
 	private volatile boolean first=true;
-	private volatile int timerAbzug=0;
 	private volatile long time;
-	private boolean standingright=false, exit=false;
-	private boolean turnLeft=false;
-	private int iMax=1;
 	private int i=1, j=0;
 			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
@@ -56,6 +50,9 @@ public class RobotMoves {
 	
 	public void followLine() throws RemoteException {
 		calcPTurn();
+		if (followLine) {
+			step=StepEnum.FOLLOWLINE;
+		}else {
 			if (step==StepEnum.START) {
 				if (pTurn>0.9) {
 					step=StepEnum.SPIRAL;
@@ -63,127 +60,45 @@ public class RobotMoves {
 					step=StepEnum.FOLLOWLINE;
 				}
 			}
-			if (pTurn>1) {
-				pTurn=1;
-			}
-			if (pTurn<-1) {
-				pTurn=-1;
-			}
-			iAbweichung += pTurn;
-			if (iAbweichung>iMax) {
-				iAbweichung=iMax;
-			}
-			if (iAbweichung<-iMax) {
-				iAbweichung=-iMax;
-			}
-			if (first) {
-				zuletzt=pTurn;
-				vorletzte=pTurn;
-				first=false;
-			}
-			abweichung=pTurn-zuletzt;
-			differenz=vorletzte-pTurn;
-//			System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
-//			if(((differenz>=grenzwert && pTurn>0.9) || (differenz<=-grenzwert && pTurn<-0.9)) && step==StepEnum.FOLLOWLINE) {
-//				if (differenz>=grenzwert) {
-//					step=StepEnum.LEFTLINE_DARK;
-//					System.out.println("DARK");
-//				}else {
-//					step=StepEnum.LEFTLINE_WHITE;
-//					System.out.println("WHITE");
-//				}
-//				System.out.println("START TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-//			}
-			turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*abweichung);
-			vorletzte=zuletzt;
-			zuletzt = pTurn;
-			if (turn>100) {
-				turn=100;
-			}
-			if (turn<-100) {
-				turn=-100;
-			}
-			if (pTurn<0.7 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5 || step==StepEnum.LEFTLINE_WHITE)) {
-				step=StepEnum.FOLLOWLINE;
-			}
-//			if (step==StepEnum.FOLLOWLINE && pTurn>0.9) {
-//				step=StepEnum.LEFTLINE_WHITE;
-//			}
-			switch(step) {
-				case LEFTLINE_DARK:
-//					mControl.rotate(155, true);
-//					System.out.println("NEGATIV!! " + pTurn);
-//					while (pTurn<0.1)
-//					{
-//						calcPTurn();
-//						mControl.stop();
-//						mControl.rotate(20, true);
-//						mControl.drive(speed, 0);
-//						sleep(15);
-//					}
-//					step=StepEnum.FOLLOWLINE;
-//					System.out.println(pTurn);
-//					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-//					first = true;
-					turnLeft=false;
-					step=StepEnum.FINDLINE;
-					break;
-				case LEFTLINE_WHITE:
-					turnLeft=true;
-					step=StepEnum.FINDLINE;
-//					mControl.drive(speed, 80);
-					break;
-//				case FINDLINE:
-//					//System.out.println("FOUNDLINE!!: " + pTurn);
-//					standingright=false;
-//					boolean firstrotate=true;
-//					boolean rightTurn=false;
-//					while (pTurn>0.2 || pTurn<-0.2) {
-//						calcPTurn();
-//						if (pTurn>0.2) {
-//							mControl.drive(50, 0);
-//						}
-//						if (pTurn<-0.2) {
-//							mControl.drive(-50, 0);
-//						}
-//					}
-//					if (firstrotate) {
-//						if (turnLeft) {
-//							mControl.rotate(180, false);
-//						}else {
-//							mControl.rotate(180, true);
-//						}
-//						firstrotate=false;
-//					}else {
-//						if (rightTurn) {
-//							mControl.rotate(20, true);
-//						}else {
-//							mControl.rotate(20, false);
-//						}
-//					}
-//					mControl.drive(50, 0);
-//					sleep(200);
-//					mControl.stop();
-//					calcPTurn();
-//					if (pTurn>0.2 || pTurn<-0.2) {
-//						if (pTurn>0.2) {
-//							rightTurn=true;
-//						}else {
-//							rightTurn=false;
-//						}
-//						mControl.drive(-50, 0);
-//						sleep(200);
-//						mControl.stop();
-//					}else {
-//						step=StepEnum.FOLLOWLINE;
-//						reset();
-//						standingright=true;
-//					}
-//					break;
-				case FOLLOWLINE:
+		}
+		if (pTurn>1) {
+			pTurn=1;
+		}
+		if (pTurn<-1) {
+			pTurn=-1;
+		}
+		iAbweichung += pTurn;
+		if (iAbweichung>iMax) {
+			iAbweichung=iMax;
+		}
+		if (iAbweichung<-iMax) {
+			iAbweichung=-iMax;
+		}
+		if (first) {
+			zuletzt=pTurn;
+			first=false;
+		}
+		abweichung=pTurn-zuletzt;
+		System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
+		turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*abweichung);
+		zuletzt = pTurn;
+		if (turn>100) {
+			turn=100;
+		}
+		if (turn<-100) {
+			turn=-100;
+		}
+		if (pTurn<0.7 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5)) {
+			step=StepEnum.FOLLOWLINE;
+		}
+		switch(step) {
+			case FOLLOWLINE:
+				if (followLine) {
+					mControl.drive(speed, turn);
+				}else {
 					System.out.println("FOLLOWLINE!!");
 					sample=ultraSensor.fetchSample();
-//					Sample Range between 0.03-2,5
+					//Sample Range between 0.03-2,5
 					if (sample[0]>=0.2) {
 						mControl.drive(speed, turn);
 					}else {
@@ -205,89 +120,87 @@ public class RobotMoves {
 							}
 						}
 					}
-					break;
-				case EVADE1:
-					System.out.println("EVADE1!!!!!!");
-					//gerade aus fahren
-					System.out.println(System.currentTimeMillis() + "  " + time);
-					if ((System.currentTimeMillis()-time)<2500) {
-						
-						System.out.println(System.currentTimeMillis() + "  " + time);
-						calcPTurn();
-						if (!checkEvade()) {
-							if (time-System.currentTimeMillis()>2000 && pTurn<0.8) {
-								step=StepEnum.FINDLINE;
-								mControl.drive(0, 0);
-								break;
-							}else {
-								mControl.drive(75, 0);
-							}
-						}
-					}else {
-						step=StepEnum.EVADE2;
-						break;
-					}
-					break;
-				case EVADE2:
-					System.out.println("EVADE2!!!!!!");
-					//links drehen (wieder gerade)
-					mControl.rotate(180, true);
-					time=System.currentTimeMillis();
-					step=StepEnum.EVADE3;
-					break;
-				case EVADE3:
-					System.out.println("EVADE3!!!!!!");
-					//gerade aus fahren
-					if ((System.currentTimeMillis()-time)<14000) {
-						if (!checkEvade()) {
-							mControl.drive(75, 0);
-						}
-					}else {
-						step=StepEnum.EVADE4;
-						break;
-					}
-					break;
-				case EVADE4:
-					System.out.println("EVADE4!!!!!!");
-					//links drehen (hinter dem Hinderniss Linie suchen)
-					mControl.rotate(180, true);
-					time=System.currentTimeMillis();
-					step=StepEnum.EVADE5;
-					break;
-				case EVADE5:
-					System.out.println("EVADE5!!!!!!");
-					//gerade aus fahren
-					if ((System.currentTimeMillis()-time)<5000) {
-						if (!checkEvade()) {
-							mControl.drive(75, 0);
-						}
-					}else {
-						step=StepEnum.SPIRAL;
-						break;
-					}
-					break;
-				case SPIRAL:
+				}
+				break;
+			case EVADE1:
+				System.out.println("EVADE1!!!!!!");
+				//gerade aus fahren
+				if ((System.currentTimeMillis()-time)<5000) {
 					calcPTurn();
-					System.out.println("SPIRAL");
-					if(!checkEvade()) {
-						calcPTurn();
-						mControl.drive(100, 50-i);
-						if (j%(i*10)==0&&i<=45){++i;}
-						++j;
-						if (pTurn<0.3) {
+					if (!checkEvade()) {
+						if (time-System.currentTimeMillis()>2000 && pTurn<0.8) {
 							step=StepEnum.FOLLOWLINE;
-							mControl.drive(10, 0);
+							mControl.drive(0, 0);
+						}else {
+							mControl.drive(75, 0);
 						}
 					}
-					sleep(10);
+				}else {
+					step=StepEnum.EVADE2;
 					break;
-			}
-			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
-//			try {
-//				Thread.sleep(180);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
+				}
+				break;
+			case EVADE2:
+				System.out.println("EVADE2!!!!!!");
+				//links drehen (wieder gerade)
+				mControl.rotate(180, true);
+				time=System.currentTimeMillis();
+				step=StepEnum.EVADE3;
+				break;
+			case EVADE3:
+				System.out.println("EVADE3!!!!!!");
+				//gerade aus fahren
+				if ((System.currentTimeMillis()-time)<14000) {
+					if (!checkEvade()) {
+						mControl.drive(75, 0);
+					}
+				}else {
+					step=StepEnum.EVADE4;
+					break;
+				}
+				break;
+			case EVADE4:
+				System.out.println("EVADE4!!!!!!");
+				//links drehen (hinter dem Hinderniss Linie suchen)
+				mControl.rotate(180, true);
+				time=System.currentTimeMillis();
+				step=StepEnum.EVADE5;
+				break;
+			case EVADE5:
+				System.out.println("EVADE5!!!!!!");
+				//gerade aus fahren
+				if ((System.currentTimeMillis()-time)<5000) {
+					if (!checkEvade()) {
+						mControl.drive(75, 0);
+					}
+				}else {
+					step=StepEnum.SPIRAL;
+					break;
+				}
+				break;
+			case SPIRAL:
+				calcPTurn();
+				System.out.println("SPIRAL");
+				if(!checkEvade()) {
+					calcPTurn();
+					mControl.drive(100, 50-i);
+					if (j%(i*10)==0&&i<=45){++i;}
+					++j;
+					if (pTurn<0.3) {
+						step=StepEnum.FOLLOWLINE;
+						mControl.drive(10, 0);
+					}
+				}
+				sleep(10);
+				break;
+		case START:
+			System.out.println("Dies sollte niemals passieren");
+			break;
+		default:
+			System.out.println("Dies sollte niemals passieren");
+			break;
+		}
+		RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
 	}
 	
 	private void highLow() {

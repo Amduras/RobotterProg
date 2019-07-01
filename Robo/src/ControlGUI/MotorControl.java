@@ -97,8 +97,6 @@ public class MotorControl {
 	}
 	public void rotate(int angle, boolean left) throws RemoteException {
 		if (left) {
-//			mControl.motorA.stop(true);
-//			mControl.motorB.stop(true);
 			motorA.rotate(angle,true);
 			motorB.rotate(-angle,true);
 			while(motorB.isMoving())
@@ -106,8 +104,6 @@ public class MotorControl {
 				;
 			}
 		}else {
-//			mControl.motorA.stop(true);
-//			mControl.motorB.stop(true);
 			motorA.rotate(-angle,true);
 			motorB.rotate(angle,true);
 			while(motorB.isMoving())
