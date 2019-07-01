@@ -262,10 +262,10 @@ public class RobotControl {
 			modusButtons.add(bRGB);
 			
 			JPanel jPan1 = new JPanel();
-//			jPan1.add(bVorwaerts);
-//			jPan1.add(bRueckwaerts);
-//			jPan1.add(bRechts);
-//			jPan1.add(bLinks);
+			jPan1.add(bVorwaerts);
+			jPan1.add(bRueckwaerts);
+			jPan1.add(bRechts);
+			jPan1.add(bLinks);
 //			jPan1.add(bZurueck);
 			jPan1.add(bStop);
 			
@@ -351,8 +351,8 @@ public class RobotControl {
 	public static void setup() {
 		try {
 			if (ev3==null) {
-//				ev3=new RemoteEV3("10.0.1.1");
-				ev3 = new RemoteEV3("192.168.0.210");
+				ev3=new RemoteEV3("10.0.1.1");
+//				ev3 = new RemoteEV3("192.168.0.210");
 			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block

@@ -207,11 +207,17 @@ public class RobotMoves {
 				case SPIRAL:
 					calcPTurn();
 					boolean exit=false;
+					int i = 0, j = 0;
 					while (pTurn>0.3 || exit)
 					{
 						exit=checkEvade();
 						calcPTurn();
-						mControl.drive(speed, 70);
+						mControl.drive(speed, 70-i);
+						if (j%1000==0&&i<=65)
+						{
+							++i;
+						}
+						++j;
 					}
 					if (!exit) {
 						step=StepEnum.FINDLINE;
@@ -386,10 +392,10 @@ public class RobotMoves {
 			while (pTurn>0.2 || pTurn<-0.2) {
 				calcPTurn();
 				if (pTurn>0.2) {
-					mControl.drive(-50, 0);
+					mControl.drive(50, 0);
 				}
 				if (pTurn<-0.2) {
-					mControl.drive(50, 0);
+					mControl.drive(-50, 0);
 				}
 			}
 			if (firstrotate) {
@@ -401,9 +407,9 @@ public class RobotMoves {
 				firstrotate=false;
 			}else {
 				if (rightTurn) {
-					mControl.rotate(20, false);
-				}else {
 					mControl.rotate(20, true);
+				}else {
+					mControl.rotate(20, false);
 				}
 			}
 			mControl.drive(50, 0);
