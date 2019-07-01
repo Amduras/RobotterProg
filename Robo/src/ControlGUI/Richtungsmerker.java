@@ -1,16 +1,16 @@
 package ControlGUI;
 
 public class Richtungsmerker {
-	private float time=0;
+	private long time=0;
 	private EnumRichtung richtung=EnumRichtung.START;
-	Richtungsmerker(float time, EnumRichtung richtung){
+	Richtungsmerker(long time, EnumRichtung richtung){
 		this.setTime(time);
 		this.setRichtung(richtung);
 	}
 	public float getTime() {
 		return time;
 	}
-	public void setTime(float time) {
+	public void setTime(long time) {
 		this.time = time;
 	}
 	public EnumRichtung getRichtung() {

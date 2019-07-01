@@ -43,7 +43,7 @@ public class RobotControl {
 	private static Label lIAbweichung = new Label("I-Abweichung:");
 	private static boolean rotModus=false;
 	private static Thread followLineThread;
-	private float time=0;
+	private long time=0;
 	private EnumRichtung richtung = EnumRichtung.START;
 	private Vector<Richtungsmerker> richtungen = new Vector<Richtungsmerker>();
 	
@@ -298,6 +298,7 @@ public class RobotControl {
 			manualButtons.add(bVorwaerts);
 			manualButtons.add(bRueckwaerts);
 			manualButtons.add(bRechts);
+			manualButtons.add(bReset);
 			manualButtons.add(bLinks);
 			manualButtons.add(bStop);
 			manualButtons.add(bAusweichen);
@@ -314,6 +315,7 @@ public class RobotControl {
 			jPan1.add(bRechts);
 			jPan1.add(bLinks);
 			jPan1.add(bZurueck);
+			jPan1.add(bReset);
 			jPan1.add(bStop);
 			
 			JPanel jPan2 = new JPanel();
