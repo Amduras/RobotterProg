@@ -2,6 +2,9 @@ package versuche;
 
 import java.rmi.RemoteException;
 import java.sql.Timestamp;
+
+import org.jfree.util.ClassComparator;
+
 import java.sql.Time;
 
 import lejos.hardware.lcd.LCD;
@@ -21,13 +24,13 @@ public class RobotMoves {
 	private volatile float pTurn = 0;
 	private float hell = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
-	private float vorvorletzteAbweichung = 0, vorletzteAbweichung = 0, letzteAbweichung = 0, zuletzt = 0, vorletzte=0;
+	private float letzteAbweichung = 0, zuletzt = 0, vorletzte=0;
 	private float KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	//Linie fahren KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	private float abweichung=0;
 	//Kp=10 Ki=0 Kd=500 fuer Linie folgen
 	private int farbe = 0;
-	private volatile int speed=50;
+	private volatile int speed=70;
 	private volatile boolean followLine=false;
 	private volatile boolean evade=true; //Wenn evade==true: Roboter weicht Hindernissen aus ? Folgt anderen Robotern
 	private boolean rotModus=false;
@@ -38,7 +41,7 @@ public class RobotMoves {
 	private volatile boolean first=true;
 	private volatile int timerAbzug=0;
 	private volatile long time;
-	
+	private boolean standingright=false;
 			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
 		this.mControl = mControl;
@@ -49,19 +52,7 @@ public class RobotMoves {
 	}
 	
 	public void followLine() throws RemoteException {
-			float[] colors=farbSensor.fetchSample();
-			float nvalue=colors[farbe]-middle;
-			if (nvalue==0) {
-				pTurn=0;
-			}else {
-				if(nvalue<0) {
-					pTurn=nvalue/hellArea;
-				}else {
-					if(nvalue>0) {
-						pTurn=nvalue/dunkelArea;
-					}
-				}
-			}
+			calcPTurn();
 			if (pTurn>1) {
 				pTurn=1;
 			}
@@ -85,17 +76,15 @@ public class RobotMoves {
 			System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
 			if((differenz>=grenzwert ||differenz<=-grenzwert) && step==StepEnum.FOLLOWLINE) {
 				if (differenz>=grenzwert) {
-//					step=StepEnum.TURNPOSITIV;
+					step=StepEnum.LEFTLINE_DARK;
 					System.out.println("positiv");
 				}else {
-//					step=StepEnum.TURNNEGATIV;
+					step=StepEnum.LEFTLINE_WHITE;
 					System.out.println("negativ");
 				}
 				System.out.println("START TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			}
 			turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*(abweichung));
-			vorvorletzteAbweichung = vorletzteAbweichung;
-			vorletzteAbweichung = letzteAbweichung;
 			letzteAbweichung = abweichung;
 			vorletzte=zuletzt;
 			zuletzt = pTurn;
@@ -106,179 +95,119 @@ public class RobotMoves {
 				turn=-100;
 			}
 			if (pTurn<0.8 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5 || step==StepEnum.EVADE6)) {
-				step=StepEnum.FOLLOWLINE;
+				step=StepEnum.FINDLINE;
 			}
 			switch(step) {
-				case TURNNEGATIV:
-					mControl.motorA.rotate(155,true);
-					mControl.motorB.rotate(-155,true);
-					while(mControl.motorB.isMoving())
-					{
-						;
-					}
-					System.out.println("NEGATIV!! " + pTurn);
-					while (pTurn<0.1)
-					{
-						colors=farbSensor.fetchSample();
-						nvalue=colors[farbe]-middle;
-						if (nvalue==0) {
-							pTurn=0;
-						}else {
-							if(nvalue<0) {
-								pTurn=nvalue/hellArea;
-							}else {
-								if(nvalue>0) {
-									pTurn=nvalue/dunkelArea;
-								}
-							}
-						}
-						mControl.motorA.stop(true);
-						mControl.motorB.stop(true);
-						mControl.motorA.rotate(20,true);
-						mControl.motorB.rotate(-20,true);
-						while(mControl.motorB.isMoving())
-						{
-							;
-						}
-						mControl.drive(speed, 0);
-						sleep(15);
-					}
-//					mControl.drive(100, 100);
-//					System.out.println("Turn: " + turn + ", pTurn: " + pTurn + ", Abweichung: " + abweichung);
-//					mControl.drive(speed, turn);
-//					sleep(500);
-					step=StepEnum.FOLLOWLINE;
-					System.out.println(pTurn);
-					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					first = true;
+				case LEFTLINE_DARK:
+//					mControl.rotate(155, true);
+//					System.out.println("NEGATIV!! " + pTurn);
+//					while (pTurn<0.1)
+//					{
+//						calcPTurn();
+//						mControl.stop();
+//						mControl.rotate(20, true);
+//						mControl.drive(speed, 0);
+//						sleep(15);
+//					}
+//					step=StepEnum.FOLLOWLINE;
+//					System.out.println(pTurn);
+//					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+//					first = true;
+					findLine(false);
 					break;
-				case TURNPOSITIV:
-					mControl.motorA.rotate(-155,true);
-					mControl.motorB.rotate(155,true);
-					while(mControl.motorB.isMoving())
-					{
-						;
-					}
-					System.out.println("POSITIV!!: " + pTurn);
-					while (pTurn>-0.1)
-					{
-						colors=farbSensor.fetchSample();
-						nvalue=colors[farbe]-middle;
-						if (nvalue==0) {
-							pTurn=0;
-						}else {
-							if(nvalue<0) {
-								pTurn=nvalue/hellArea;
-							}else {
-								if(nvalue>0) {
-									pTurn=nvalue/dunkelArea;
-								}
-							}
-						}
-						mControl.motorA.stop(true);
-						mControl.motorB.stop(true);
-						mControl.motorA.rotate(-20,true);
-						mControl.motorB.rotate(20,true);
-						while(mControl.motorB.isMoving())
-						{
-							;
-						}
-						mControl.drive(speed, 0);
-						sleep(15);
-					}
-					System.out.println("Turn: " + turn + ", pTurn: " + pTurn + ", Abweichung: " + abweichung);
-//					mControl.drive(speed, turn);
-//					sleep(500);
-					step=StepEnum.FOLLOWLINE;
-					System.out.println(pTurn);
-					System.out.println("ENDE TURN!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					first = true;
+				case LEFTLINE_WHITE:
+					findLine(true);
+					break;
+				case FINDLINE:
+					findLine(false);
 					break;
 				case FOLLOWLINE:
+					System.out.println("FOLLOWLINE!!");
 					sample=ultraSensor.fetchSample();
-					//Sample Range between 0.03-2,5
-//					if (sample[0]>=0.3) {
+//					Sample Range between 0.03-2,5
+					if (sample[0]>=0.12) {
 						mControl.drive(speed, turn);
-//					}else {
-//						if ( sample[0]>0.1) {
-//							if (evade) {
-//								//turn<=90 Grad rechts
-//								mControl.drive(50, -100);
-//								sleep(480);
-//								step=StepEnum.EVADE1;
-//								time= System.currentTimeMillis();
-//							}else {
-//								double slow=(sample[0]-0.1)/0.2; //abhaengig von dem Abstand vom vorherfahrenden Wagen verlangsamen (normalisiert auf die momentanen Parameter)
-//								mControl.drive((int)slow*speed, turn);
-//							}
-//						}else {
-//							if (evade) {
-//								mControl.drive(-speed, 0);
-//							}else {
-//								mControl.drive(0, 0);
-//							}
-//						}
-//					}
+					}else {
+						if (!evade) {
+							if (sample[0]>0.03) {
+								double slow =sample[0]/0.12;
+								mControl.drive((int)slow*speed, turn);
+							}else {
+								mControl.drive(0, 0);
+							}
+						}else {
+							if ( sample[0]>0.06) {
+								//turn<=90 Grad rechts
+								mControl.rotate(180, false);
+								step=StepEnum.EVADE1;
+								time= System.currentTimeMillis();
+							}else {
+								mControl.drive(-speed, 0);
+							}
+						}
+					}
 					break;
 				case EVADE1:
+					System.out.println("EVADE1!!!!!!");
 					//gerade aus fahren
-					if ((time - System.currentTimeMillis())<1000) {
-						if (time-System.currentTimeMillis()>200 && pTurn<0.8) {
+					if ((System.currentTimeMillis()-time)<2500) {
+						if (time-System.currentTimeMillis()>1000 && pTurn<0.8) {
 							step=StepEnum.FOLLOWLINE;
 							mControl.drive(speed, turn);
+							break;
 						}else {
-							mControl.drive(speed, 0);
+							mControl.drive(150, 0);
 						}
+						mControl.drive(150, 0);
 						break;
 					}else {
 						step=StepEnum.EVADE2;
 						time=System.currentTimeMillis();
 					}
 				case EVADE2:
+					System.out.println("EVADE2!!!!!!");
 					//links drehen (wieder gerade)
-					if ((time - System.currentTimeMillis())<480) {
-						mControl.drive(50, 100);
-						break;
-					}else {
-						step=StepEnum.EVADE3;
-						time=System.currentTimeMillis();
-					}
+					mControl.rotate(180, true);
+					time=System.currentTimeMillis();
+					step=StepEnum.EVADE3;
 				case EVADE3:
+					System.out.println("EVADE3!!!!!!");
 					//gerade aus fahren
-					if ((time - System.currentTimeMillis())<1000) {
-						mControl.drive(speed, 0);
+					if ((System.currentTimeMillis()-time)<7000) {
+						mControl.drive(150, 0);
 						break;
 					}else {
 						step=StepEnum.EVADE4;
 						time=System.currentTimeMillis();
 					}
 				case EVADE4:
+					System.out.println("EVADE4!!!!!!");
 					//links drehen (hinter dem Hinderniss Linie suchen)
-					if ((time - System.currentTimeMillis())<480) {
-						mControl.drive(50, 100);
-						break;
-					}else {
-						step=StepEnum.EVADE5;
-						time=System.currentTimeMillis();
-					}
+					mControl.rotate(180, true);
+					time=System.currentTimeMillis();
+					step=StepEnum.EVADE5;
 				case EVADE5:
+					System.out.println("EVADE5!!!!!!");
 					//gerade aus fahren
-					if ((time - System.currentTimeMillis())<1000) {
-						mControl.drive(speed, 0);
+					if ((System.currentTimeMillis()-time)<2500) {
+						mControl.drive(150, 0);
 						break;
 					}else {
 						step=StepEnum.EVADE6;
 						time=System.currentTimeMillis();
 					}
 				case EVADE6:
+					System.out.println("EVADE6!!!!!!");
 					//Linie suchen indem man in immer groesser werdenden Kreisen sucht
-					int Abzug=(int) ((time-System.currentTimeMillis())/1000);
-					mControl.drive(speed, 100-Abzug);
+					mControl.rotate(180, false);
+					time=System.currentTimeMillis();
+					step=StepEnum.FOLLOWLINE;
 					break;
+					
 			}
 			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
 //			try {
-//				Thread.sleep(200);
+//				Thread.sleep(180);
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
@@ -420,8 +349,70 @@ public class RobotMoves {
 		zuletzt=0;
 		abweichung=0;
 		letzteAbweichung=0;
-		vorletzteAbweichung=0;
-		vorvorletzteAbweichung=0;
 		first=true;
+	}
+	private void calcPTurn() throws RemoteException {
+		float[] colors=farbSensor.fetchSample();
+		float nvalue=colors[farbe]-middle;
+		if (nvalue==0) {
+			pTurn=0;
+		}else {
+			if(nvalue<0) {
+				pTurn=nvalue/hellArea;
+			}else {
+				if(nvalue>0) {
+					pTurn=nvalue/dunkelArea;
+				}
+			}
+		}
+	}
+	private void findLine(boolean left) throws RemoteException {
+		System.out.println("FOUNDLINE!!: " + pTurn);
+		standingright=false;
+		boolean firstrotate=true;
+		boolean rightTurn=false;
+		while (!standingright) {
+			while (pTurn>0.2 || pTurn<-0.2) {
+				calcPTurn();
+				if (pTurn>0.2) {
+					mControl.drive(-50, 0);
+				}
+				if (pTurn<-0.2) {
+					mControl.drive(50, 0);
+				}
+			}
+			if (firstrotate) {
+				if (left) {
+					mControl.rotate(180, false);
+				}else {
+					mControl.rotate(180, true);
+				}
+				firstrotate=false;
+			}else {
+				if (rightTurn) {
+					mControl.rotate(20, true);
+				}else {
+					mControl.rotate(20, false);
+				}
+			}
+			mControl.drive(50, 0);
+			sleep(200);
+			mControl.stop();
+			calcPTurn();
+			if (pTurn>0.2 || pTurn<-0.2) {
+				if (pTurn>0.2) {
+					rightTurn=true;
+				}else {
+					rightTurn=false;
+				}
+				mControl.drive(-50, 0);
+				sleep(200);
+				mControl.stop();
+			}else {
+				step=StepEnum.FOLLOWLINE;
+				reset();
+				standingright=true;
+			}
+		}
 	}
 }

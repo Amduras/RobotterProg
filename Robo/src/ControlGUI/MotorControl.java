@@ -9,8 +9,8 @@ import lejos.remote.ev3.RMIRegulatedMotor;
  *
  */
 public class MotorControl {
-	RMIRegulatedMotor motorA;
-	RMIRegulatedMotor motorB;
+	private RMIRegulatedMotor motorA;
+	private RMIRegulatedMotor motorB;
 	/*
 	 * @param motorA -> rechter Motor
 	 * @param motorB -> linker Motor
@@ -89,6 +89,31 @@ public class MotorControl {
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
+	}
+	public void rotate(int angle, boolean left) throws RemoteException {
+		if (left) {
+//			mControl.motorA.stop(true);
+//			mControl.motorB.stop(true);
+			motorA.rotate(angle,true);
+			motorB.rotate(-angle,true);
+			while(motorB.isMoving())
+			{
+				;
+			}
+		}else {
+//			mControl.motorA.stop(true);
+//			mControl.motorB.stop(true);
+			motorA.rotate(-angle,true);
+			motorB.rotate(angle,true);
+			while(motorB.isMoving())
+			{
+				;
+			}
+		}
+	}
+	public void stop() throws RemoteException {
+		motorA.stop(true);
+		motorB.stop(true);
 	}
 }
 

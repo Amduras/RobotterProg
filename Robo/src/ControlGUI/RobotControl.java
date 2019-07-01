@@ -34,7 +34,7 @@ public class RobotControl {
 	static MotorControl mControl;
 	static RemoteEV3 ev3;
 	static RobotMoves rMoves;
-	static volatile int speed=50;
+	static volatile int speed=70;
 	static volatile boolean followLine = false;
 	static Label lAbweichung = new Label("Abweichung:");
 	static Label lTurn = new Label("Turn:");
@@ -271,7 +271,7 @@ public class RobotControl {
 			
 			JPanel jPan2 = new JPanel();
 			jPan2.add(bAusweichen);
-//			jPan2.add(bFolgen);
+			jPan2.add(bFolgen);
 
 			JPanel jPan3 = new JPanel();
 			//jPan3.add(bRand);
@@ -321,7 +321,12 @@ public class RobotControl {
 				@Override
 				public void windowClosing(WindowEvent e) {
 					followLine=false;
-					mControl.drive(0,0);
+					try {
+						mControl.stop();
+					} catch (RemoteException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					beenden();
 					e.getWindow().dispose();
 				}
