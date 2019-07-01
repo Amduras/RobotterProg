@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Vector;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -24,24 +25,27 @@ import lejos.remote.ev3.RMISampleProvider;
 import lejos.remote.ev3.RemoteEV3;
 
 public class RobotControl {
-	static RMIRegulatedMotor motorA;
-	static RMIRegulatedMotor motorB;
-	static RMIRegulatedMotor motorC;
-	static RMIRegulatedMotor motorD;
-	static RMISampleProvider ultraSensor;
-	static RMISampleProvider farbSensor;
-	static RMISampleProvider gyroSensor;
-	static MotorControl mControl;
-	static RemoteEV3 ev3;
-	static RobotMoves rMoves;
-	static volatile int speed=70;
-	static volatile boolean followLine = false;
-	static Label lAbweichung = new Label("Abweichung:");
-	static Label lTurn = new Label("Turn:");
-	static Label lDistance = new Label("Distance:");
-	static Label lIAbweichung = new Label("I-Abweichung:");
-	static boolean rotModus=false;
+	private static RMIRegulatedMotor motorA;
+	private static RMIRegulatedMotor motorB;
+	private static RMIRegulatedMotor motorC;
+	private static RMIRegulatedMotor motorD;
+	private static RMISampleProvider ultraSensor;
+	private static RMISampleProvider farbSensor;
+	private static RMISampleProvider gyroSensor;
+	private static MotorControl mControl;
+	private static RemoteEV3 ev3;
+	private static RobotMoves rMoves;
+	private static volatile int speed=70;
+	private static volatile boolean followLine = false;
+	private static Label lAbweichung = new Label("Abweichung:");
+	private static Label lTurn = new Label("Turn:");
+	private static Label lDistance = new Label("Distance:");
+	private static Label lIAbweichung = new Label("I-Abweichung:");
+	private static boolean rotModus=false;
 	private static Thread followLineThread;
+	private float time=0;
+	private EnumRichtung richtung = EnumRichtung.START;
+	private Vector<Richtungsmerker> richtungen = new Vector<Richtungsmerker>();
 	
 	public RobotControl(){
 		try {
@@ -63,6 +67,10 @@ public class RobotControl {
 			bStop.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker(System.currentTimeMillis()-time, richtung));
+					}
+					richtung=EnumRichtung.START;
 					followLine = false;
 					mControl.drive(0, 0);
 					System.out.println("Stop");
@@ -82,7 +90,6 @@ public class RobotControl {
 						try {
 							farbSensor.close();
 						} catch (RemoteException e2) {
-							// TODO Auto-generated catch block
 							e2.printStackTrace();
 						}
 					}
@@ -133,6 +140,11 @@ public class RobotControl {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					followLine = false;
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker((System.currentTimeMillis()-time), richtung));
+					}
+					time=System.currentTimeMillis();
+					richtung=EnumRichtung.GERADEAUS;
 					mControl.drive(speed, 0);
 					System.out.println("Vorwaerts");
 				}
@@ -141,6 +153,11 @@ public class RobotControl {
 			bRueckwaerts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker((System.currentTimeMillis()-time), richtung));
+					}
+					time=System.currentTimeMillis();
+					richtung=EnumRichtung.RUECKWAERTSGANG;
 					followLine = false;
 					mControl.drive(-speed, 0);
 					System.out.println("Rueckwaerts");
@@ -150,6 +167,11 @@ public class RobotControl {
 			bLinks.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker((System.currentTimeMillis()-time), richtung));
+					}
+					time=System.currentTimeMillis();
+					richtung=EnumRichtung.LINKS;
 					followLine = false;
 					mControl.drive(speed, 100);
 					System.out.println("Links Kurve");
@@ -159,15 +181,91 @@ public class RobotControl {
 			bRechts.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker((System.currentTimeMillis()-time), richtung));
+					}
+					time=System.currentTimeMillis();
+					richtung=EnumRichtung.RECHTS;
 					followLine = false;
 					mControl.drive(speed, -100);
 					System.out.println("Rechts Kurve");
 				}
 			});
+			JRadioButton bReset= new JRadioButton("Reset");
+			bReset.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					mControl.drive(0, 0);
+					time=0;
+					richtung=EnumRichtung.START;
+					richtungen=new Vector<Richtungsmerker>();
+					followLine = false;
+					System.out.println("Reset");
+				}
+			});
+			JRadioButton bZurueck= new JRadioButton("Zurueck");
+			bZurueck.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (!(richtung==EnumRichtung.START)) {
+						richtungen.add(new Richtungsmerker((System.currentTimeMillis()-time), richtung));
+					}
+					richtung=EnumRichtung.START;
+					try {
+						mControl.rotate(360, true);
+					} catch (RemoteException e1) {
+						e1.printStackTrace();
+					}
+					for (int i = 1; i <= richtungen.size(); i++) {
+						Richtungsmerker ab = richtungen.get(richtungen.size()-i);
+						if (!(ab.getTime()==0)) {
+							switch (ab.getRichtung()){
+							case LINKS:
+								time=System.currentTimeMillis();
+								while (System.currentTimeMillis()-time<ab.getTime()) {
+									mControl.drive(speed, -100);
+								}
+								mControl.drive(0, 0);
+								break;
+							case GERADEAUS:
+								time=System.currentTimeMillis();
+								while (System.currentTimeMillis()-time<ab.getTime()) {
+									mControl.drive(speed, 0);
+								}
+								mControl.drive(0, 0);
+								break;
+							case RECHTS:
+								time=System.currentTimeMillis();
+								while (System.currentTimeMillis()-time<ab.getTime()) {
+									mControl.drive(speed, 100);
+								}
+								mControl.drive(0, 0);
+								break;
+							case RUECKWAERTSGANG:
+								time=System.currentTimeMillis();
+								while (System.currentTimeMillis()-time<ab.getTime()) {
+									mControl.drive(-speed, 0);
+								}
+								mControl.drive(0, 0);
+								break;
+							case START:
+								System.out.println("FEHLER");
+								break;
+							default:
+								break;
+							}
+						}
+					}
+					
+				}
+				
+			});
 			JRadioButton bAusweichen= new JRadioButton("Ausweichen");
 			bAusweichen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					richtung=EnumRichtung.START;
+					richtungen=new Vector<Richtungsmerker>();
 					rMoves.setFollowLine(false);
 					rMoves.setEvade(true);
 					startFollowLine();
@@ -177,15 +275,19 @@ public class RobotControl {
 			bFolgen.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					richtung=EnumRichtung.START;
+					richtungen=new Vector<Richtungsmerker>();
 					rMoves.setFollowLine(false);
 					rMoves.setEvade(false);
 					startFollowLine();
 				}
 			});
-			JRadioButton bFollowLine= new JRadioButton("Roboter folgen");
-			bFolgen.addActionListener(new ActionListener() {
+			JRadioButton bFollowLine= new JRadioButton("Follow line");
+			bFollowLine.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					richtung=EnumRichtung.START;
+					richtungen=new Vector<Richtungsmerker>();
 					rMoves.setFollowLine(true);
 					startFollowLine();
 				}
@@ -201,6 +303,7 @@ public class RobotControl {
 			manualButtons.add(bAusweichen);
 			manualButtons.add(bFolgen);
 			manualButtons.add(bFollowLine);
+			manualButtons.add(bZurueck);
 			
 			ButtonGroup modusButtons = new ButtonGroup();
 			modusButtons.add(bRGB);
@@ -210,6 +313,7 @@ public class RobotControl {
 			jPan1.add(bRueckwaerts);
 			jPan1.add(bRechts);
 			jPan1.add(bLinks);
+			jPan1.add(bZurueck);
 			jPan1.add(bStop);
 			
 			JPanel jPan2 = new JPanel();
@@ -257,7 +361,6 @@ public class RobotControl {
 					try {
 						mControl.stop();
 					} catch (RemoteException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 					beenden();
@@ -277,17 +380,14 @@ public class RobotControl {
 	public static void setup() {
 		try {
 			if (ev3==null) {
-				ev3=new RemoteEV3("10.0.1.1");
-//				ev3 = new RemoteEV3("192.168.0.210");
+//				ev3=new RemoteEV3("10.0.1.1");
+				ev3 = new RemoteEV3("192.168.0.210");
 			}
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NotBoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 				
@@ -308,7 +408,6 @@ public class RobotControl {
 			try {
 				farbSensor.close();
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -321,7 +420,6 @@ public class RobotControl {
 			try {
 				ultraSensor.close();
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -330,7 +428,6 @@ public class RobotControl {
 			try {
 				gyroSensor.close();
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -413,7 +510,6 @@ public class RobotControl {
 					try {
 						rMoves.followLine();
 					} catch (RemoteException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}

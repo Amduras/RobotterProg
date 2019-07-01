@@ -79,7 +79,7 @@ public class RobotMoves {
 			first=false;
 		}
 		abweichung=pTurn-zuletzt;
-		System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
+//		System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
 		turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*abweichung);
 		zuletzt = pTurn;
 		if (turn>100) {
