@@ -25,7 +25,7 @@ public class RobotMoves {
 	private float hell = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
 	private float zuletzt = 0, vorletzte=0;
-	private float KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
+	private float KONSTANTE_P = 60, KONSTANTE_I = 10f, KONSTANTE_D = 750;
 	//Linie fahren KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	private float abweichung=0;
 	//Kp=10 Ki=0 Kd=500 fuer Linie folgen
@@ -69,11 +69,11 @@ public class RobotMoves {
 				pTurn=-1;
 			}
 			iAbweichung += pTurn;
-			if (iAbweichung>40) {
-				iAbweichung=40;
+			if (iAbweichung>2) {
+				iAbweichung=2;
 			}
-			if (iAbweichung<-40) {
-				iAbweichung=-40;
+			if (iAbweichung<-2) {
+				iAbweichung=-2;
 			}
 			if (first) {
 				zuletzt=pTurn;
@@ -82,7 +82,7 @@ public class RobotMoves {
 			}
 			abweichung=pTurn-zuletzt;
 			differenz=vorletzte-pTurn;
-//			System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
+			System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
 //			if(((differenz>=grenzwert && pTurn>0.9) || (differenz<=-grenzwert && pTurn<-0.9)) && step==StepEnum.FOLLOWLINE) {
 //				if (differenz>=grenzwert) {
 //					step=StepEnum.LEFTLINE_DARK;
@@ -105,9 +105,9 @@ public class RobotMoves {
 			if (pTurn<0.3 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5 || step==StepEnum.LEFTLINE_WHITE)) {
 				step=StepEnum.FINDLINE;
 			}
-			if (step==StepEnum.FOLLOWLINE && pTurn>0.9) {
-				step=StepEnum.LEFTLINE_WHITE;
-			}
+//			if (step==StepEnum.FOLLOWLINE && pTurn>0.9) {
+//				step=StepEnum.LEFTLINE_WHITE;
+//			}
 			switch(step) {
 				case LEFTLINE_DARK:
 //					mControl.rotate(155, true);

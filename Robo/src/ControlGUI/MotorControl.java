@@ -26,13 +26,14 @@ public class MotorControl {
 	 * @param turn
 	 */
 	public void drive(int speed, int turn){
-		int mSpeed;
+		float mSpeed;
 		if (speed<0) {
 			mSpeed=-speed;
 		}else {
 			mSpeed=speed;
 		}
-		float multiplier = 2*mSpeed/100;
+		float multiplier = (2*mSpeed)/100;
+		System.out.println(multiplier);
 		int speedmodifier = (int) (multiplier*turn);
 		try {
 			//Vorwaerts
@@ -53,9 +54,13 @@ public class MotorControl {
 						motorA.setSpeed(speed+speedmodifier);
 						motorA.forward();
 					}else {
+						int speed2=-(speed+speedmodifier);
+						System.out.println(speedmodifier);
+						System.out.println("MotorA:" + speed2);
 						motorA.setSpeed(-(speed+speedmodifier));
 						motorA.backward();
 					}
+					System.out.println("MotorB:" + speed);
 					motorB.setSpeed(speed);
 					motorB.forward();
 				}

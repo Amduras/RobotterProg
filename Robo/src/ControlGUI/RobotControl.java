@@ -351,8 +351,8 @@ public class RobotControl {
 	public static void setup() {
 		try {
 			if (ev3==null) {
-//				ev3=new RemoteEV3("10.0.1.1");
-				ev3 = new RemoteEV3("192.168.0.210");
+				ev3=new RemoteEV3("10.0.1.1");
+//				ev3 = new RemoteEV3("192.168.0.210");
 			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
