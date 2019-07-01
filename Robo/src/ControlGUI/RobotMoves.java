@@ -25,7 +25,7 @@ public class RobotMoves {
 	private float hell = 0, dunkel = 0, differenz = 0, dunkelArea = 0;
 	private float hellArea = 0, iAbweichung = 0, middle=0;
 	private float zuletzt = 0, vorletzte=0;
-	private float KONSTANTE_P = 60, KONSTANTE_I = 10f, KONSTANTE_D = 750;
+	private float KONSTANTE_P = 60, KONSTANTE_I = 10f, KONSTANTE_D = 500;
 	//Linie fahren KONSTANTE_P = 15, KONSTANTE_I = 0.4f, KONSTANTE_D = 750;
 	private float abweichung=0;
 	//Kp=10 Ki=0 Kd=500 fuer Linie folgen
@@ -43,6 +43,7 @@ public class RobotMoves {
 	private volatile long time;
 	private boolean standingright=false, exit=false;
 	private boolean turnLeft=false;
+	private int iMax=2;
 	private int i=1, j=0;
 			
 	public RobotMoves(RMISampleProvider farbSensor, MotorControl mControl, RMISampleProvider ultraSensor, RMISampleProvider gyroSensor, int speed) {
@@ -69,11 +70,11 @@ public class RobotMoves {
 				pTurn=-1;
 			}
 			iAbweichung += pTurn;
-			if (iAbweichung>2) {
-				iAbweichung=2;
+			if (iAbweichung>iMax) {
+				iAbweichung=iMax;
 			}
-			if (iAbweichung<-2) {
-				iAbweichung=-2;
+			if (iAbweichung<-iMax) {
+				iAbweichung=-iMax;
 			}
 			if (first) {
 				zuletzt=pTurn;
