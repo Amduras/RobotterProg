@@ -1,4 +1,4 @@
-package versuche;
+package ControlGUI;
 
 import java.rmi.RemoteException;
 import java.sql.Timestamp;
@@ -203,6 +203,15 @@ public class RobotMoves {
 					time=System.currentTimeMillis();
 					step=StepEnum.FOLLOWLINE;
 					break;
+				case SPIRAL:
+					calcPTurn();
+					while (pTurn>0.3)
+					{
+						calcPTurn();
+						mControl.drive(speed, 70);
+					}
+					findLine(true);
+					break;
 					
 			}
 			RobotControl.setCurrentValues(abweichung, turn, sample, iAbweichung);
@@ -366,6 +375,7 @@ public class RobotMoves {
 			}
 		}
 	}
+	
 	private void findLine(boolean left) throws RemoteException {
 		System.out.println("FOUNDLINE!!: " + pTurn);
 		standingright=false;

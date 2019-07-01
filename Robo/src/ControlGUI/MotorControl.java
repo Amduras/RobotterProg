@@ -1,4 +1,4 @@
-package versuche;
+package ControlGUI;
 
 import java.rmi.RemoteException;
 
