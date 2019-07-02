@@ -519,7 +519,4 @@ public class RobotControl {
 		};
 		followLineThread.start();
 	}
-	private void stopFollowLine() {
-		followLine=false;
-	}
 }

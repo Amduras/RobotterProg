@@ -17,7 +17,6 @@ public class RobotMoves {
 	private MotorControl mControl;
 	private RMISampleProvider ultraSensor;
 	private RMISampleProvider gyroSensor;
-	private SampleProvider distance=null;
 	private float[] aHell = new float[3];
 	private float[] aDunkel = new float[3];
 	private float[] aRand = new float[3];
@@ -50,15 +49,11 @@ public class RobotMoves {
 	
 	public void followLine() throws RemoteException {
 		calcPTurn();
-		if (followLine) {
-			step=StepEnum.FOLLOWLINE;
-		}else {
-			if (step==StepEnum.START) {
-				if (pTurn>0.9) {
-					step=StepEnum.SPIRAL;
-				}else {
-					step=StepEnum.FOLLOWLINE;
-				}
+		if (step==StepEnum.START) {
+			if (pTurn>0.9) {
+				step=StepEnum.SPIRAL;
+			}else {
+				step=StepEnum.FOLLOWLINE;
 			}
 		}
 		if (pTurn>1) {
@@ -79,7 +74,6 @@ public class RobotMoves {
 			first=false;
 		}
 		abweichung=pTurn-zuletzt;
-//		System.out.println(differenz + " und pTurn:" + pTurn + " und turn:" + turn);
 		turn=(int)(KONSTANTE_P*pTurn+KONSTANTE_I*iAbweichung+KONSTANTE_D*abweichung);
 		zuletzt = pTurn;
 		if (turn>100) {
@@ -88,7 +82,7 @@ public class RobotMoves {
 		if (turn<-100) {
 			turn=-100;
 		}
-		if (pTurn<0.7 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5)) {
+		if (pTurn<0.6 &&(step==StepEnum.EVADE3 || step==StepEnum.EVADE4 || step==StepEnum.EVADE5)) {
 			step=StepEnum.FOLLOWLINE;
 		}
 		switch(step) {
@@ -183,15 +177,14 @@ public class RobotMoves {
 				System.out.println("SPIRAL");
 				if(!checkEvade()) {
 					calcPTurn();
-					mControl.drive(100, 50-i);
-					if (j%(i*10)==0&&i<=45){++i;}
+					mControl.drive(speed, 50-i);
+					if (j%(i*15)==0&&i<=35){++i;}
 					++j;
 					if (pTurn<0.3) {
 						step=StepEnum.FOLLOWLINE;
 						mControl.drive(10, 0);
 					}
 				}
-				sleep(10);
 				break;
 		case START:
 			System.out.println("Dies sollte niemals passieren");
@@ -325,6 +318,8 @@ public class RobotMoves {
 		middle=0;
 		hellArea=0;
 		dunkelArea=0;
+		i=1;
+		j=0;
 	}
 	public static void sleep(int time) {
 		try {
@@ -355,23 +350,25 @@ public class RobotMoves {
 		}
 	}
 	private boolean checkEvade() throws RemoteException {
-		sample=ultraSensor.fetchSample();
-		if (sample[0]<0.2 && sample[0]>0.1) {
-			//turn<=90 Grad rechts
-			mControl.rotate(180, false);
-			step=StepEnum.EVADE1;
-			time= System.currentTimeMillis();
-			return true;
-		}
-		if (sample[0]<0.1) {
-			while (sample[0]<0.1) {
-				mControl.drive(-speed, 0);
-				sample=ultraSensor.fetchSample();
+		if (evade) {
+			sample=ultraSensor.fetchSample();
+			if (sample[0]<0.2 && sample[0]>0.1) {
+				//turn<=90 Grad rechts
+				mControl.rotate(180, false);
+				step=StepEnum.EVADE1;
+				time= System.currentTimeMillis();
+				return true;
 			}
-			mControl.rotate(180, false);
-			step=StepEnum.EVADE1;
-			time= System.currentTimeMillis();
-			return true;
+			if (sample[0]<0.1) {
+				while (sample[0]<0.1) {
+					mControl.drive(-speed, 0);
+					sample=ultraSensor.fetchSample();
+				}
+				mControl.rotate(180, false);
+				step=StepEnum.EVADE1;
+				time= System.currentTimeMillis();
+				return true;
+			}
 		}
 		return false;
 	}
