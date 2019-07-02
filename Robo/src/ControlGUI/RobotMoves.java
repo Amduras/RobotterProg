@@ -177,10 +177,10 @@ public class RobotMoves {
 				System.out.println("SPIRAL");
 				if(!checkEvade()) {
 					calcPTurn();
-					mControl.drive(speed, 50-i);
+					mControl.drive(speed, -50+i);
 					if (j%(i*15)==0&&i<=35){++i;}
 					++j;
-					if (pTurn<0.3) {
+					if (pTurn<0.5) {
 						step=StepEnum.FOLLOWLINE;
 						mControl.drive(10, 0);
 					}
@@ -333,6 +333,7 @@ public class RobotMoves {
 		zuletzt=0;
 		abweichung=0;
 		first=true;
+		step=StepEnum.START;
 	}
 	private void calcPTurn() throws RemoteException {
 		float[] colors=farbSensor.fetchSample();
